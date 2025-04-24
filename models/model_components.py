@@ -101,6 +101,7 @@ class TransformerBlock(nn.Module):
         
     def forward(self, x):
         print(x.shape)
+        print(self.ln_attn.weight.shape)
         ln_x = self.ln_attn(x)
         print(ln_x.shape)
         x = x + self.attention(ln_x)
