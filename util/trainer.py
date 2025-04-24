@@ -4,6 +4,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from transformers import get_cosine_schedule_with_warmup
+from .device import get_device
 import math
 
 class Trainer:
@@ -20,7 +21,7 @@ class Trainer:
         self.train_loader = splits["train"]
         self.val_loader = splits["val"]
         self.tokenizer = tokenizer
-        self.device = self._get_device()
+        self.device = get_device()
         self.model.to(self.device)
 
         self.num_training_steps = len(self.train_loader)
@@ -60,28 +61,7 @@ class Trainer:
                     'val_perplexity': [],
                 }
             }
-
-    def _get_device(self):
-        if not torch.cuda.is_available():
-            print("CUDA not available, using CPU")
-            return torch.device('cpu')
-        vram_required = 9
-        print(f"Estimated VRAM required: {vram_required:.2f}GB")
-        for i in range(torch.cuda.device_count()):
-            try:
-                props = torch.cuda.get_device_properties(i)
-                gpu = torch.device(f'cuda:{i}')
-                free_memory, total_memory = torch.cuda.mem_get_info(gpu)
-                total_memory = int(total_memory / 1024**3)
-                free_memory = int(free_memory / 1024**3)  
-                if free_memory > vram_required:
-                    print(f"Using GPU [{i}]: {props.name} with {free_memory:.2f}GB")
-                    return torch.device(f'cuda:{i}')
-                else:
-                    print(f"GPU [{i}]: {props.name} only has {free_memory:.2f}GB free memory, skipping")
-            except Exception:
-                print(f"Error reading GPU [{i}], skipping")
-        raise RuntimeError(f"No GPU with at least {vram_required}GB of free memory found")
+    
     
     def _save_checkpoint(self):
         if not os.path.exists(self.save_path):

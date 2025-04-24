@@ -100,8 +100,10 @@ class TransformerBlock(nn.Module):
         self.ln_ff = nn.LayerNorm(config.d_latent)
         
     def forward(self, x):
-
-        x = x + self.attention(self.ln_attn(x))
+        print(x.shape)
+        ln_x = self.ln_attn(x)
+        print(ln_x.shape)
+        x = x + self.attention(ln_x)
         x = x + self.feed_forward(self.ln_ff(x))
         
         return x
