@@ -16,6 +16,7 @@ def load_most_recent_checkpoint(model):
 def load_config(config_name):
     
     config_dir = os.path.join(CONFIG_DIR, f"{config_name}.json")
+    default_config_dir = os.path.join(CONFIG_DIR, "default.json")
     
     if not os.path.exists(config_dir):
         raise ValueError(f"Config file not found: {config_dir}")
@@ -30,8 +31,9 @@ def load_config(config_name):
                     d[k] = v
         return SimpleNamespace(**d)
     
-    default_config = json.load(os.path.join(CONFIG_DIR, "default.json"))
-    config = dict_to_namespace(json.load(open(config_dir)), default_config)
+    default_config = json.load(open(default_config_dir))
+    config = json.load(open(config_dir))
+    config = dict_to_namespace(config, default_config)
     config.name = config_name
     
     return config
