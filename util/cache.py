@@ -1,6 +1,6 @@
 import os
 
-CACHE_DIR = os.path.join(os.path.dirname(__file__), "../data/cache")
+CACHE_DIR = os.path.join(os.path.dirname(__file__), "../cache")
 
 def setup_cache_dir():
     if not os.path.exists(CACHE_DIR):
