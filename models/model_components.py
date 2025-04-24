@@ -31,9 +31,9 @@ class Attention(nn.Module):
         
         B, S, E = q.shape
         
-        q = self.W_q(q).view(B, S, self.config.n_heads, self.config.d_embed).transpose(1, 2)
-        k = self.W_k(k).view(B, S, self.config.n_heads, self.config.d_embed).transpose(1, 2)
-        v = self.W_v(v).view(B, S, self.config.n_heads, self.config.d_embed).transpose(1, 2)
+        q = self.W_q(q).view(B, S, self.config.n_heads, self.config.d_latent).transpose(1, 2)
+        k = self.W_k(k).view(B, S, self.config.n_heads, self.config.d_latent).transpose(1, 2)
+        v = self.W_v(v).view(B, S, self.config.n_heads, self.config.d_latent).transpose(1, 2)
         
         q = self.rotary_embeddings(q)
         k = self.rotary_embeddings(k)
@@ -47,7 +47,7 @@ class Attention(nn.Module):
         attn_probs = self.drop_attn(attn_probs)
         
         attn_output = torch.matmul(attn_probs, v)
-        attn_output = attn_output.transpose(1, 2).contiguous().view(B, S, self.config.d_embed * self.config.n_heads)
+        attn_output = attn_output.transpose(1, 2).contiguous().view(B, S, self.config.d_latent * self.config.n_heads)
         attn_output = self.W_o(attn_output)
         attn_output = self.drop_resid(attn_output)
         
@@ -57,8 +57,8 @@ class FeedForward(nn.Module):
     def __init__(self, config, d_in, d_out):
         super().__init__()
 
-        self.fc_1 = nn.Linear(d_in, 4 * config.d_embed)
-        self.fc_2 = nn.Linear(4 * config.d_embed, d_out)
+        self.fc_1 = nn.Linear(d_in, 4 * config.d_latent)
+        self.fc_2 = nn.Linear(4 * config.d_latent, d_out)
         
         self.activation = nn.GELU()    
         self.drop = nn.Dropout(0.1)
@@ -88,11 +88,6 @@ class TransformerBlock(nn.Module):
                 d_k = config.d_primary
                 d_v = config.d_primary
                 self.ln_attn = nn.LayerNorm(config.d_primary)
-        elif layer == 0:
-            d_q = config.d_embed
-            d_k = config.d_embed
-            d_v = config.d_embed
-            self.ln_attn = nn.LayerNorm(config.d_embed)
         else:
             d_q = config.d_latent
             d_k = config.d_latent
@@ -115,6 +110,7 @@ class DualBlock(nn.Module):
         super().__init__()
         
         self.config = config
+        
         self.attention = Attention(config, d_q=config.d_primary, d_k=config.d_primary, d_v=config.d_secondary, d_out=config.d_primary)
         
         if config.concat_streams_for_ff:

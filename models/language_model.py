@@ -9,14 +9,21 @@ class LanguageModel(nn.Module):
         
         self.config = config
         
-        self.embedding = nn.Embedding(config.vocab_size, config.d_embed)
+        if config.n_dual_blocks > 0:
+            self.embedding = nn.Embedding(config.vocab_size, config.d_primary)
+        else:
+            self.embedding = nn.Embedding(config.vocab_size, config.d_latent)
 
         self.dual_blocks = nn.ModuleList(DualBlock(config, i) for i in range(config.n_dual_blocks))
         self.transformer_blocks = nn.ModuleList(TransformerBlock(config, i) for i in range(config.n_transformer_blocks))
         
-        self.ln_f = nn.LayerNorm(config.d_embed)
-
-        self.lm_head = nn.Linear(config.d_embed, config.vocab_size, bias=False)
+        if config.n_dual_blocks > 0:
+            self.ln_f = nn.LayerNorm(config.d_primary)
+            self.lm_head = nn.Linear(config.d_primary, config.vocab_size, bias=False)
+        else:
+            self.ln_f = nn.LayerNorm(config.d_embed)
+            self.lm_head = nn.Linear(config.d_embed, config.vocab_size, bias=False)
+        
         self.lm_head.weight = self.embedding.weight
         
         self.apply(self._init_weights)
@@ -53,6 +60,9 @@ class LanguageModel(nn.Module):
             
         for transformer_block in self.transformer_blocks:
             x = transformer_block(x)
+        
+        if self.config.n_dual_blocks > 0:
+            x = x[:, :, :self.config.d_primary]
         
         x = self.ln_f(x)
         
