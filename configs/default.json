@@ -1,0 +1,9 @@
+{
+    "max_seq_len": 128,
+    "d_embed": 512,
+    "d_latent": 512,
+    "n_heads": 8,
+    "concat_streams_for_ff": true,
+    "dual_ff_residual": true,
+    "concat_streams_for_transformer": true
+}

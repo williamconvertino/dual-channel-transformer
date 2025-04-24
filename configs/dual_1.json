@@ -1,0 +1,6 @@
+{
+    "d_primary": 256,
+    "d_secondary": 256,
+    "n_dual_blocks": 1,
+    "n_transformer_blocks": 2
+}
