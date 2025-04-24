@@ -22,7 +22,12 @@ class Attention(nn.Module):
         self.drop_attn = nn.Dropout(0.1)
         self.drop_resid = nn.Dropout(0.1)
         
-    def forward(self, q, k, v):
+    def forward(self, q, k=None, v=None):
+        
+        if k is None:
+            k = q
+        if v is None:
+            v = q
         
         B, S, E = q.shape
         
@@ -100,11 +105,7 @@ class TransformerBlock(nn.Module):
         self.ln_ff = nn.LayerNorm(config.d_latent)
         
     def forward(self, x):
-        print(x.shape)
-        print(self.ln_attn.weight.shape)
-        ln_x = self.ln_attn(x)
-        print(ln_x.shape)
-        x = x + self.attention(ln_x)
+        x = x + self.attention(self.ln_attn(x))
         x = x + self.feed_forward(self.ln_ff(x))
         
         return x
