@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from model_components import TransformerBlock, DualBlock
+from .model_components import TransformerBlock, DualBlock
 
 class LanguageModel(nn.Module):
     def __init__(self, config):
