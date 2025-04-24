@@ -101,8 +101,8 @@ class TransformerBlock(nn.Module):
         
     def forward(self, x):
 
-        x = x + self.attention(self.ln_1(x))
-        x = x + self.feed_forward(self.ln_2(x))
+        x = x + self.attention(self.ln_attn(x))
+        x = x + self.feed_forward(self.ln_ff(x))
         
         return x
     
