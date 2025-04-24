@@ -71,7 +71,7 @@ class TransformerBlock(nn.Module):
         
         self.config = config
         
-        if config.n_dual_layers > 0 and layer == 0:
+        if config.n_dual_blocks > 0 and layer == 0:
             if config.concat_streams_for_transformer:
                 d_q = config.d_primary + config.d_secondary
                 d_k = config.d_primary + config.d_secondary
