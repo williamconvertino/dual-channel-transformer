@@ -1,4 +1,5 @@
 import time
+from datetime import datetime
 import os
 import torch
 import torch.nn as nn
@@ -100,6 +101,9 @@ class Trainer:
         val_loss = float("inf")
         val_perplexity = float("inf")
         best_val_loss = float("inf")
+        
+        os.makedirs(f"logs/{self.model.config.name}", exist_ok=True)
+        log_file = open(f"logs/{self.model.config.name}/{datetime.now().strftime("%Y%m%d_%H%M%S")}.txt", "a")
 
         for epoch in range(self.max_epochs):
             
@@ -142,6 +146,11 @@ class Trainer:
                         break
                     
                 time_remaining = self._get_time_remaining(i, start_time)
-                print(f"\r[Epoch {epoch} | Step {i}/{len(self.train_loader)}] train loss: {train_loss:.4f} | val loss: {val_loss:.4f} | val ppl: {val_perplexity:.4f} | time remaining: {time_remaining}", end="")
-            
+                epoch_statement = f"[Epoch {epoch} | Step {i}/{len(self.train_loader)}] train loss: {train_loss:.4f} | val loss: {val_loss:.4f} | val ppl: {val_perplexity:.4f} | time remaining: {time_remaining}"
+                print(f"\r{epoch_statement}", end="")
+                
+                log_file.write(f"{epoch_statement}\n")
+                log_file.flush()
+
+                
             print(f"Epoch {epoch} | train loss: {train_loss:.4f} | val loss: {val_loss:.4f} | val ppl: {val_perplexity:.4f} | best val loss: {best_val_loss:.4f}")
