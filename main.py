@@ -42,7 +42,7 @@ def main():
     splits = TinyStoriesDataset.get_splits(tokenizer, config.max_seq_len)
     
     if args.train:
-        trainer = Trainer(model, splits, tokenizer, checkpoint)
+        trainer = Trainer(model, splits, tokenizer)
         trainer.train()
     elif args.eval:
         evaluator = Evaluator(model, splits, tokenizer)
