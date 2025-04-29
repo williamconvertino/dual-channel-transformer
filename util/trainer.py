@@ -75,7 +75,7 @@ class Trainer:
             for batch in self.splits["val"]:
                 loss += self._step(batch).item()
         self.model.train()
-        return loss / len(self.val_loader)
+        return loss / len(self.splits["val"])
 
     def train(self):
         
@@ -84,7 +84,7 @@ class Trainer:
 
         for epoch in range(self.max_epochs):
             
-            batch_tqdm = tqdm(self.train_loader, desc=f"Epoch {epoch + 1}/{self.max_epochs}", leave=False)
+            batch_tqdm = tqdm(self.splits["train"], desc=f"Epoch {epoch + 1}/{self.max_epochs}", leave=False)
             total_loss = 0.0
             
             for batch in batch_tqdm:
@@ -103,7 +103,7 @@ class Trainer:
                 batch_tqdm.set_postfix(loss=train_loss)
                 
             val_loss = self._validate()
-            avg_train_loss = total_loss / len(self.train_loader)
+            avg_train_loss = total_loss / len(self.splits["train"])
             
             if val_loss < best_val_loss:
                 best_val_loss = val_loss
