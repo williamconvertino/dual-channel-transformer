@@ -21,8 +21,8 @@ class LanguageModel(nn.Module):
             self.ln_f = nn.LayerNorm(config.d_primary)
             self.lm_head = nn.Linear(config.d_primary, config.vocab_size, bias=False)
         else:
-            self.ln_f = nn.LayerNorm(config.d_embed)
-            self.lm_head = nn.Linear(config.d_embed, config.vocab_size, bias=False)
+            self.ln_f = nn.LayerNorm(config.d_latent)
+            self.lm_head = nn.Linear(config.d_latent, config.vocab_size, bias=False)
         
         self.lm_head.weight = self.embedding.weight
         
