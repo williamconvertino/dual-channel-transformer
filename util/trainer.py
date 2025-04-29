@@ -109,10 +109,6 @@ class Trainer:
             
             for i, batch in enumerate(self.train_loader):
                 
-                if self.resume_checkpoint and epoch == self.checkpoint["epoch"] and i <= self.checkpoint["step"]:
-                    print(f"\r[Epoch {epoch} | Step {i}/{len(self.train_loader)}] Skipping (already completed)", end="")
-                    continue
-
                 train_loss = self._step(batch)
         
                 self.optimizer.zero_grad()
