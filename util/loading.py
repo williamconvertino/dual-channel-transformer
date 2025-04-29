@@ -3,20 +3,21 @@ import torch
 from types import SimpleNamespace
 import json
 
-CHECKPOINT_DIR = os.path.join(os.path.dirname(__file__), "../checkpoints")
-MODELS_DIR = os.path.join(os.path.dirname(__file__), "../models")
-CONFIG_DIR = os.path.join(os.path.dirname(__file__), "../configs")
-
-def load_most_recent_checkpoint(model):
-    checkpoint_path = os.path.join(CHECKPOINT_DIR, f"{model.config.name}.pt")
+def load_checkpoint(model, epoch=None):
+    if epoch is None:
+        return None
+    elif epoch == "best":
+        checkpoint_path = f"checkpoints/{model.config.name}/best.pt"
+    else:
+        checkpoint_path = f"checkpoints/{model.config.name}/epoch_{epoch}.pt"
     if not os.path.exists(checkpoint_path):
         return None
     return torch.load(checkpoint_path, weights_only=False, map_location="cpu")
 
 def load_config(config_name):
     
-    config_dir = os.path.join(CONFIG_DIR, f"{config_name}.json")
-    default_config_dir = os.path.join(CONFIG_DIR, "default.json")
+    config_dir = f"configs/{config_name}.json"
+    default_config_dir = f"configs/default.json"
     
     if not os.path.exists(config_dir):
         raise ValueError(f"Config file not found: {config_dir}")

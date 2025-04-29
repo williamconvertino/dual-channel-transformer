@@ -2,10 +2,14 @@ import random
 import torch
 import torch.nn.functional as F
 from .trainer import Trainer
+from .device import get_device
 
-def generate_text_greedy(model, tokenizer, prompt, max_length=50, temperature=1.0, device="gpu"):
+def generate_text_greedy(model, tokenizer, prompt, max_length=50, temperature=1.0):
+    
+    device = get_device()
     model.to(device)
     model.eval()
+    
     input_ids = torch.tensor(tokenizer.encode(prompt)).unsqueeze(0).to(device)
     generated = input_ids
     input_size = input_ids.size(1)
@@ -28,9 +32,12 @@ def generate_text_greedy(model, tokenizer, prompt, max_length=50, temperature=1.
     
     return tokenizer.decode(generated[0].tolist()[input_size:])
 
-def generate_text_beam(model, tokenizer, prompt, max_length=50, beam_width=3, device="gpu"):
+def generate_text_beam(model, tokenizer, prompt, max_length=50, beam_width=3):
+    
+    device = get_device()
     model.to(device)
     model.eval()
+    
     input_ids = torch.tensor(tokenizer.encode(prompt)).unsqueeze(0).to(device)
     input_size = input_ids.size(1)
     beams = [(input_ids, 0)] 
@@ -65,12 +72,13 @@ def generate_text_beam(model, tokenizer, prompt, max_length=50, beam_width=3, de
     best_seq = beams[0][0]
     return tokenizer.decode(best_seq[0].tolist()[input_size:])
 
-def generate_text_topk(model, tokenizer, prompt, max_length=50, temperature=1.0, top_k=40, device="gpu"):
-    """
-    Generate text using top-k sampling.
-    """
+def generate_text_topk(model, tokenizer, prompt, max_length=50, temperature=1.0, top_k=40):
+    
+    device = get_device()
+
     model.to(device)
     model.eval()
+    
     input_ids = torch.tensor(tokenizer.encode(prompt)).unsqueeze(0).to(device)
     generated = input_ids
     input_size = input_ids.size(1)
@@ -83,7 +91,7 @@ def generate_text_topk(model, tokenizer, prompt, max_length=50, temperature=1.0,
 
         logits, _ = model(input_ids)
         next_token_logits = logits[:, -1, :] / temperature
-        # Keep only the top_k tokens
+        
         topk_values, topk_indices = torch.topk(next_token_logits, top_k, dim=-1)
         filtered_logits = torch.full_like(next_token_logits, float('-inf'))
         filtered_logits.scatter_(dim=-1, index=topk_indices, src=next_token_logits.gather(dim=-1, index=topk_indices))
@@ -97,12 +105,12 @@ def generate_text_topk(model, tokenizer, prompt, max_length=50, temperature=1.0,
     
     return tokenizer.decode(generated[0].tolist()[input_size:])
 
-def generate_text_nucleus(model, tokenizer, prompt, max_length=50, temperature=1.0, top_p=0.9, device="gpu"):
-    """
-    Generate text using nucleus (top-p) sampling.
-    """
+def generate_text_nucleus(model, tokenizer, prompt, max_length=50, temperature=1.0, top_p=0.9):
+
+    device = get_device()
     model.to(device)
     model.eval()
+    
     input_ids = torch.tensor(tokenizer.encode(prompt)).unsqueeze(0).to(device)
     generated = input_ids
     input_size = input_ids.size(1)
@@ -116,13 +124,10 @@ def generate_text_nucleus(model, tokenizer, prompt, max_length=50, temperature=1
         logits, _ = model(input_ids)
         next_token_logits = logits[:, -1, :] / temperature
         
-        # Compute probabilities and sort them
         probs = F.softmax(next_token_logits, dim=-1)
         sorted_probs, sorted_indices = torch.sort(probs, descending=True, dim=-1)
         cumulative_probs = torch.cumsum(sorted_probs, dim=-1)
-        # Remove tokens with cumulative probability above the threshold
         sorted_indices_to_remove = cumulative_probs > top_p
-        # Shift the indices to ensure at least one token is kept
         sorted_indices_to_remove[..., 1:] = sorted_indices_to_remove[..., :-1].clone()
         sorted_indices_to_remove[..., 0] = 0
         
@@ -145,74 +150,53 @@ class Evaluator:
         self.splits = splits
         self.tokenizer = tokenizer
 
-        self.device = self._get_device()
+        self.device = get_device()
+        
+    def _get_test_loss(self):
+        
+        self.model.eval()
+        
+        test_loss = 0.0
+        
+        with torch.no_grad():
+            for batch in self.splits["test"]:
+                input_ids = batch.to(self.device)
+                x = input_ids[:, :-1]
+                targets = input_ids[:, 1:]
+                _, loss = self.model(x, targets=targets, ignore_index=self.tokenizer.pad_token_id)
+                test_loss += loss.item()
+                
+        return test_loss / len(self.splits["test"])
 
-    def _get_device(self):
-        if not torch.cuda.is_available():
-            print("CUDA not available, using CPU")
-            return torch.device('cpu')
-        vram_required = 5
-        print(f"Estimated VRAM required: {vram_required:.2f}GB")
-        for i in range(torch.cuda.device_count()):
-            try:
-                props = torch.cuda.get_device_properties(i)
-                gpu = torch.device(f'cuda:{i}')
-                free_memory, total_memory = torch.cuda.mem_get_info(gpu)
-                total_memory = int(total_memory / 1024**3)
-                free_memory = int(free_memory / 1024**3)  
-                if free_memory > vram_required:
-                    print(f"Using GPU [{i}]: {props.name} with {free_memory:.2f}GB")
-                    return torch.device(f'cuda:{i}')
-                else:
-                    print(f"GPU [{i}]: {props.name} only has {free_memory:.2f}GB free memory, skipping")
-            except Exception:
-                print(f"Error reading GPU [{i}], skipping")
-        raise RuntimeError(f"No GPU with at least {vram_required}GB of free memory found")
-    
-    def eval(self, eval_types, num_prompts=10, temperature=1.0, top_k=40, top_p=0.9, beam_width=3):
-        """
-        Evaluate multiple sampling strategies (e.g. "greedy", "beam", "topk", "nucleus")
-        back-to-back for each prompt in the test split.
-        """
+    def evaluate(self, num_prompts=10):
+
+        test_loss = self._get_test_loss()
+        
+        print(f"=" * 50)
+        print(f"Test Loss: {test_loss:.4f}")
+        print(f"=" * 50)
+        
         prompts = []
         
-        # Gather the first `num_prompts` prompts from the test split.
         for i, batch in enumerate(self.splits["test"]):
             if i >= num_prompts:
                 break
-            example = batch[0]
-            prompt_tokens = example.tolist()[:50]  # Use first 50 tokens as prompt
-            prompt_tokens = [token for token in prompt_tokens if token != self.tokenizer.pad_token_id]
-            prompt_text = self.tokenizer.decode(prompt_tokens)
-            prompts.append(prompt_text)
-        
-        # Mapping of evaluation type to corresponding generation function.
-        eval_funcs = {
-            "greedy": lambda prompt: generate_text_greedy(self.model, self.tokenizer, prompt, temperature=temperature, device=self.device),
-            "beam": lambda prompt: generate_text_beam(self.model, self.tokenizer, prompt, beam_width=beam_width, device=self.device),
-            "topk": lambda prompt: generate_text_topk(self.model, self.tokenizer, prompt, temperature=temperature, top_k=top_k, device=self.device),
-            "nucleus": lambda prompt: generate_text_nucleus(self.model, self.tokenizer, prompt, temperature=temperature, top_p=top_p, device=self.device),
-        }
-        
-        # For each prompt, evaluate each of the requested sampling methods.
+            
+            example = batch[0].tolist()
+            example = [token for token in example if token != self.tokenizer.pad_token_id]
+            max_tokens = min(self.model.config.max_seq_len // 2, len(example) // 2)
+
+            example = example[:max_tokens]            
+            
+            prompts.append(self.tokenizer.decode(example))
+            
         for prompt in prompts:
+            print("=" * 50)
             print("Prompt:")
             print(prompt)
             print("-" * 50)
-            for eval_type in eval_types:
-                if eval_type in eval_funcs:
-                    print(f"{eval_type.capitalize()} Sampling Generation:")
-                    output = eval_funcs[eval_type](prompt)
-                    print(output)
-                    print("-" * 50)
-                else:
-                    print(f"Unknown evaluation type: {eval_type}")
-                    print("-" * 50)
-            print("*" * 50)
-                    
-    def eval_loss(self):
-        trainer = Trainer(self.model, self.splits, self.tokenizer, self.device)
-        loss = trainer.validate()
-        print("="*50)
-        print(f"Validation Loss: {loss:.4f}")
-        print("="*50)
+            
+            generated_text = generate_text_nucleus(self.model, self.tokenizer, prompt, max_length=50)
+            print("Generated Text:")
+            print(generated_text)
+            print("=" * 50)

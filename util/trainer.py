@@ -1,34 +1,33 @@
-import time
-from datetime import datetime
 import os
+import math
+from datetime import datetime
+from tqdm import tqdm
+
 import torch
 import torch.nn as nn
 import torch.optim as optim
 from transformers import get_cosine_schedule_with_warmup
+
 from .device import get_device
-import math
 
 class Trainer:
+    
     learning_rate = 1e-4
     weight_decay = 1e-2
     betas = (0.9, 0.999)
     grad_clip = 1.0
     max_epochs = 20
-    patience = 5
-    save_interval_multiplier = 0.01
-
-    def __init__(self, model, splits, tokenizer, checkpoint=None):
+    batch_size = 32
+    
+    def __init__(self, model, splits, tokenizer):
+    
         self.model = model
-        self.train_loader = splits["train"]
-        self.val_loader = splits["val"]
+        self.splits = splits
         self.tokenizer = tokenizer
         self.device = get_device()
         self.model.to(self.device)
 
-        self.num_training_steps = len(self.train_loader)
-        self.num_save_steps = int(self.num_training_steps * self.save_interval_multiplier)
-        self.early_stopping_counter = 0
-
+        self.num_training_steps = len(self.splits["train"]) // self.batch_size
         self.num_warmup_steps = int(self.num_training_steps * 0.1)
 
         self.optimizer = optim.AdamW(
@@ -44,38 +43,23 @@ class Trainer:
             num_training_steps=self.num_training_steps
         )
 
-        self.save_path = f"checkpoints/{self.model.config.name}.pt"
-        self.resume_checkpoint = checkpoint is not None
-        if self.resume_checkpoint:
-            self.checkpoint = checkpoint
-        else:
-            self.checkpoint = {
-                'epoch': 0,
-                'step': 0,
-                'model_state_dict': self.model.state_dict(),
-                'optimizer_state_dict': self.optimizer.state_dict(),
-                'scheduler_state_dict': self.scheduler.state_dict(),
-                'history': {
-                    'train_loss': [],
-                    'train_perplexity': [],
-                    'val_loss': [],
-                    'val_perplexity': [],
-                }
-            }
-    
-    
-    def _save_checkpoint(self):
-        if not os.path.exists(self.save_path):
-            os.makedirs(os.path.dirname(self.save_path), exist_ok=True)
-        torch.save(self.checkpoint, self.save_path)
+        self.checkpoint_dir = f"checkpoints/{self.model.config.name}"
+        self.log_dir = f"logs/{self.model.config.name}"
+        
+        os.makedirs(self.checkpoint_dir, exist_ok=True)
+        os.makedirs(self.log_dir, exist_ok=True)
+        
+        dt = datetime.now().strftime("%Y%m%d_%H%M%S")
+        self.log_file = os.path.join(self.log_dir, f"{dt}.log")
 
-    def _get_time_remaining(self, i, start_time):
-        time_per_step = (time.time() - start_time) / (i + 1)
-        time_remaining = time_per_step * (len(self.train_loader) - i)
-        hours = int(time_remaining / 3600)
-        minutes = int((time_remaining % 3600) / 60)
-        seconds = int(time_remaining % 60)
-        return f"{hours}:{minutes}:{seconds}"
+    def _save_checkpoint(self, epoch, is_best=False):
+        torch.save(self.model.state_dict(), os.path.join(self.checkpoint_dir, f"epoch_{epoch}.pth"))
+        if is_best:
+            torch.save(self.model.state_dict(), os.path.join(self.checkpoint_dir, "best.pth"))
+
+    def _log(self, epoch, train_loss, val_loss):
+        with open(self.log_file, "a") as f:
+            f.write(f"Epoch {epoch + 1}/{self.max_epochs} | Train Loss: {train_loss:.4f} | Val Loss: {val_loss:.4f}\n")
 
     def _step(self, batch):
         input_ids = batch.to(self.device)
@@ -84,73 +68,48 @@ class Trainer:
         _, loss = self.model(x, targets=targets, ignore_index=self.tokenizer.pad_token_id)
         return loss
 
-    def validate(self):
+    def _validate(self):
         self.model.eval()
         loss = 0.0
         with torch.no_grad():
-            for batch in self.val_loader:
+            for batch in self.splits["val"]:
                 loss += self._step(batch).item()
         self.model.train()
         return loss / len(self.val_loader)
 
     def train(self):
+        
         self.model.train()
-        
-        start_time = time.time()
-        
-        val_loss = float("inf")
-        val_perplexity = float("inf")
         best_val_loss = float("inf")
-        
-        os.makedirs(f"logs/{self.model.config.name}", exist_ok=True)
-        log_file = open(f"logs/{self.model.config.name}/{datetime.now().strftime("%Y%m%d_%H%M%S")}.txt", "a")
 
         for epoch in range(self.max_epochs):
             
-            if self.resume_checkpoint and epoch <= self.checkpoint["epoch"]:
-                print(f"Skipping epoch {epoch} (already completed)")
-                continue
+            batch_tqdm = tqdm(self.train_loader, desc=f"Epoch {epoch + 1}/{self.max_epochs}", leave=False)
+            total_loss = 0.0
             
-            for i, batch in enumerate(self.train_loader):
+            for batch in batch_tqdm:
                 
-                train_loss = self._step(batch)
+                loss = self._step(batch)
         
                 self.optimizer.zero_grad()
-                train_loss.backward()
+                loss.backward()
                 torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.grad_clip)
                 self.optimizer.step()
                 self.scheduler.step()
-                train_loss = train_loss.item()
-
-                if i != 0 and (i % self.num_save_steps == 0 or i == len(self.train_loader) - 1):
-                    val_loss = self.validate()
-                    val_perplexity = math.exp(min(val_loss, 100))
-                    step = i + epoch * len(self.train_loader)
-                    self.checkpoint["history"]["train_loss"].append((step, train_loss))
-                    self.checkpoint["history"]["val_loss"].append((step, val_loss))
-                    self.checkpoint["history"]["val_perplexity"].append((step, val_perplexity))
-                    self.checkpoint["epoch"] = epoch
-                    self.checkpoint["step"] = i
-                    self.checkpoint["model_state_dict"] = self.model.state_dict()
-                    self.checkpoint["optimizer_state_dict"] = self.optimizer.state_dict()
-                    self.checkpoint["scheduler_state_dict"] = self.scheduler.state_dict()
-                    
-                    if val_loss < best_val_loss:
-                        best_val_loss = val_loss
-                        self.early_stopping_counter = 0
-                        self._save_checkpoint()
-                    else:
-                        self.early_stopping_counter += 1
-                    if self.early_stopping_counter >= self.patience:
-                        print(f"Early stopping triggered after {epoch} epochs")
-                        break
-                    
-                time_remaining = self._get_time_remaining(i, start_time)
-                epoch_statement = f"[Epoch {epoch} | Step {i}/{len(self.train_loader)}] train loss: {train_loss:.4f} | val loss: {val_loss:.4f} | val ppl: {val_perplexity:.4f} | time remaining: {time_remaining}"
-                print(f"\r{epoch_statement}", end="")
                 
-                log_file.write(f"{epoch_statement}\n")
-                log_file.flush()
-
+                train_loss = loss.item()
+                total_loss += train_loss
                 
-            print(f"Epoch {epoch} | train loss: {train_loss:.4f} | val loss: {val_loss:.4f} | val ppl: {val_perplexity:.4f} | best val loss: {best_val_loss:.4f}")
+                batch_tqdm.set_postfix(loss=train_loss)
+                
+            val_loss = self._validate()
+            avg_train_loss = total_loss / len(self.train_loader)
+            
+            if val_loss < best_val_loss:
+                best_val_loss = val_loss
+                self._save_checkpoint(epoch, is_best=True)
+            else:
+                self._save_checkpoint(epoch)
+            
+            print(f"Epoch {epoch + 1}/{self.max_epochs} | Train Loss: {avg_train_loss:.4f} | Val Loss: {val_loss:.4f}")
+            self._log(epoch, avg_train_loss, val_loss)
