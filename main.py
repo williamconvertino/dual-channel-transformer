@@ -33,9 +33,11 @@ def main():
         checkpoint = load_checkpoint(model, args.checkpoint)
         checkpoint_name = f"epoch_{args.checkpoint}.pth" if args.checkpoint != "best" else "best.pth"
         print(f"Loaded checkpoint from {checkpoint_name}")
-        model.load_state_dict(checkpoint)
     else:
         checkpoint = None
+        
+    if checkpoint:
+        model.load_state_dict(checkpoint, strict=False)
     
     splits = TinyStoriesDataset.get_splits(tokenizer, config.max_seq_len)
     
