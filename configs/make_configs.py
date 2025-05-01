@@ -5,7 +5,7 @@ for n in range(1, 10):
     p = n / 10
     
     config = {
-        "model": "dual",
+        "model_type": "dual",
         "max_seq_len": 128,
         "d_latent": 512,
         "p_primary": p,

@@ -1,5 +1,5 @@
 {
-    "model": "dual",
+    "model_type": "dual",
     "max_seq_len": 128,
     "d_latent": 512,
     "p_primary": 0.7,
