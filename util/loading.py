@@ -3,13 +3,21 @@ import torch
 from types import SimpleNamespace
 import json
 
-def load_checkpoint(model, epoch=None):
-    if epoch is None:
+def load_checkpoint(model, checkpoint_type=None):
+    if checkpoint_type is None:
         return None
-    elif epoch == "best":
-        checkpoint_path = f"checkpoints/{model.config.name}/best.pth"
+    elif checkpoint_type == "best":
+        checkpoint_path = f"checkpoints/{model.config.name}/best.pt"
+    elif checkpoint_type == "recent":
+        checkpoint_dir = f"checkpoints/{model.config.name}"
+        checkpoint_files = [f for f in os.listdir(checkpoint_dir) if f.startswith("epoch_") and f.endswith(".pt")]
+        if not checkpoint_files:
+            return None
+        checkpoint_files.sort(key=lambda x: int(x.split('_')[1].split('.')[0]), reverse=True)
+        checkpoint_path = os.path.join(checkpoint_dir, checkpoint_files[0])
     else:
-        checkpoint_path = f"checkpoints/{model.config.name}/epoch_{epoch}.pth"
+        raise ValueError(f"Unknown checkpoint type: {checkpoint_type}")
+    
     if not os.path.exists(checkpoint_path):
         return None
     return torch.load(checkpoint_path, weights_only=False, map_location="cpu")

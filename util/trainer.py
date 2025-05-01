@@ -17,13 +17,14 @@ class Trainer:
     grad_clip = 1.0
     max_epochs = 20
     
-    def __init__(self, model, splits, tokenizer):
+    def __init__(self, model, splits, tokenizer, checkpoint=None):
     
         self.model = model
         self.splits = splits
         self.tokenizer = tokenizer
         self.device = get_device()
-        self.model.to(self.device)
+        
+        self.checkpoint = checkpoint
 
         self.num_training_steps = len(self.splits["train"])
         self.num_warmup_steps = int(self.num_training_steps * 0.1)
@@ -50,10 +51,26 @@ class Trainer:
         dt = datetime.now().strftime("%Y%m%d_%H%M%S")
         self.log_file = os.path.join(self.log_dir, f"{dt}.log")
 
-    def _save_checkpoint(self, epoch, is_best=False):
-        torch.save(self.model.state_dict(), os.path.join(self.checkpoint_dir, f"epoch_{epoch}.pth"))
-        if is_best:
-            torch.save(self.model.state_dict(), os.path.join(self.checkpoint_dir, "best.pth"))
+    def _save_checkpoint(self, epoch, val_loss, best_val_loss):
+        
+        checkpoint = {
+            "epoch": epoch,
+            "val_loss": val_loss,
+            "best_val_loss": best_val_loss,
+            "optimizer_state_dict": self.optimizer.state_dict(),
+            "scheduler_state_dict": self.scheduler.state_dict(),
+            "model_state_dict": self.model.state_dict()
+        }
+        
+        torch.save(checkpoint, os.path.join(self.checkpoint_dir, f"epoch_{epoch}.pt"))
+        
+        if val_loss < best_val_loss:
+            best_checkpoint = {
+                "model_state_dict": self.model.state_dict(),
+                "val_loss": val_loss,
+                "best_val_loss": val_loss
+            }
+            torch.save(self.model.state_dict(), os.path.join(self.checkpoint_dir, "best.pt"))
 
     def _log(self, epoch, train_loss, val_loss):
         with open(self.log_file, "a") as f:
@@ -77,12 +94,18 @@ class Trainer:
 
     def train(self):
         
-        self.model.train()
         self.model.to(self.device)
+        self.model.train()
         
-        best_val_loss = float("inf")
+        best_val_loss = float("inf") if self.checkpoint is None else self.checkpoint["best_val_loss"]
+        starting_epoch = 0 if self.checkpoint is None else self.checkpoint["epoch"] + 1
+        
+        if self.checkpoint:
+            self.optimizer.load_state_dict(self.checkpoint["optimizer_state_dict"])
+            self.scheduler.load_state_dict(self.checkpoint["scheduler_state_dict"])
+            self.model.load_state_dict(self.checkpoint["model_state_dict"])
 
-        for epoch in range(self.max_epochs):
+        for epoch in range(starting_epoch, self.max_epochs):
             
             batch_tqdm = tqdm(self.splits["train"], desc=f"Epoch {epoch + 1}/{self.max_epochs}", leave=False)
             total_loss = 0.0
@@ -107,11 +130,8 @@ class Trainer:
             val_loss = self._validate()
             avg_train_loss = total_loss / len(self.splits["train"])
             
-            if val_loss < best_val_loss:
-                best_val_loss = val_loss
-                self._save_checkpoint(epoch, is_best=True)
-            else:
-                self._save_checkpoint(epoch)
+            best_val_loss = min(best_val_loss, val_loss)
+            self._save_checkpoint(epoch, val_loss, best_val_loss)
             
             print(f"Epoch {epoch + 1}/{self.max_epochs} | Train Loss: {avg_train_loss:.4f} | Val Loss: {val_loss:.4f}")
             self._log(epoch, avg_train_loss, val_loss)

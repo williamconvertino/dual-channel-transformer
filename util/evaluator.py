@@ -145,17 +145,15 @@ def generate_text_nucleus(model, tokenizer, prompt, max_length=50, temperature=1
     return tokenizer.decode(generated[0].tolist()[input_size:])
 
 class Evaluator:
-    def __init__(self, model, splits, tokenizer):
+    def __init__(self, model, splits, tokenizer, checkpoint=None):
         self.model = model
         self.splits = splits
         self.tokenizer = tokenizer
+        self.checkpoint = checkpoint
 
         self.device = get_device()
         
     def _get_test_loss(self):
-        
-        self.model.eval()
-        self.model.to(self.device)
         
         test_loss = 0.0
         
@@ -170,6 +168,12 @@ class Evaluator:
         return test_loss / len(self.splits["test"])
 
     def evaluate(self, num_prompts=10):
+        
+        if self.checkpoint:
+            self.model.load_state_dict(self.checkpoint["model_state_dict"])
+        
+        self.model.to(self.device)
+        self.model.eval()
 
         test_loss = self._get_test_loss()
         

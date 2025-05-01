@@ -14,7 +14,7 @@ def main():
     parser = ArgumentParser()
     parser.add_argument("--train", type=str)
     parser.add_argument("--eval", type=str, nargs="+")
-    parser.add_argument("--checkpoint", type=str, default="best")
+    parser.add_argument("--checkpoint", type=str)
     args = parser.parse_args()
 
     assert args.train or args.eval, "Must specify either train or eval"
@@ -38,25 +38,29 @@ def main():
     else:
         raise ValueError(f"Unknown model type: {config.model_type}")
     
-    if args.checkpoint:
-        checkpoint = load_checkpoint(model, args.checkpoint)
-        if checkpoint:
-            checkpoint_name = f"epoch_{args.checkpoint}.pth" if args.checkpoint != "best" else "best.pth"
-            print(f"Loaded checkpoint from {checkpoint_name}")
-        else:
-            print(f"Checkpoint not found, loading model from scratch")
-    else:
-        checkpoint = None
+    # if args.checkpoint:
+    #     checkpoint = load_checkpoint(model, args.checkpoint)
+    #     if checkpoint:
+    #         checkpoint_name = f"epoch_{args.checkpoint}.pth" if args.checkpoint != "best" else "best.pth"
+    #         print(f"Loaded checkpoint from {checkpoint_name}")
+    #     else:
+    #         print(f"Checkpoint not found, loading model from scratch")
+    # else:
+    #     checkpoint = None
         
-    if checkpoint:
-        model.load_state_dict(checkpoint, strict=False)
+    # if checkpoint:
+    #     model.load_state_dict(checkpoint, strict=False)
     
     splits = TinyStoriesDataset.get_splits(tokenizer, config.max_seq_len)
     
     if args.train:
-        trainer = Trainer(model, splits, tokenizer)
+        checkpoint_type = args.checkpoint if args.checkpoint else "recent"
+        checkpoint = load_checkpoint(model, checkpoint_type)
+        trainer = Trainer(model, splits, tokenizer, checkpoint=checkpoint)
         trainer.train()
     elif args.eval:
+        checkpoint_type = args.checkpoint if args.checkpoint else "best"
+        checkpoint = load_checkpoint(model, checkpoint_type)
         evaluator = Evaluator(model, splits, tokenizer)
         evaluator.evaluate()
 
