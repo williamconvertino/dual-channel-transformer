@@ -10,6 +10,8 @@ def load_checkpoint(model, checkpoint_type=None):
         checkpoint_path = f"checkpoints/{model.config.name}/best.pt"
     elif checkpoint_type == "recent":
         checkpoint_dir = f"checkpoints/{model.config.name}"
+        if not os.path.exists(checkpoint_dir):
+            return None
         checkpoint_files = [f for f in os.listdir(checkpoint_dir) if f.startswith("epoch_") and f.endswith(".pt")]
         if not checkpoint_files:
             return None
