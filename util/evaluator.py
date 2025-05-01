@@ -160,6 +160,7 @@ class Evaluator:
         
         with torch.no_grad():
             for batch in self.splits["test"]:
+                batch = batch.to(self.device)
                 input_ids = batch.to(self.device)
                 x = input_ids[:, :-1]
                 targets = input_ids[:, 1:]
