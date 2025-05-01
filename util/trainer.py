@@ -16,7 +16,6 @@ class Trainer:
     betas = (0.9, 0.999)
     grad_clip = 1.0
     max_epochs = 20
-    batch_size = 32
     
     def __init__(self, model, splits, tokenizer):
     
@@ -26,7 +25,7 @@ class Trainer:
         self.device = get_device()
         self.model.to(self.device)
 
-        self.num_training_steps = len(self.splits["train"]) // self.batch_size
+        self.num_training_steps = len(self.splits["train"])
         self.num_warmup_steps = int(self.num_training_steps * 0.1)
 
         self.optimizer = optim.AdamW(
