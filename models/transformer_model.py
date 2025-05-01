@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from ..util.model_util import TransformerBlock, init_weights
+from .model_util import TransformerBlock, init_weights
 
 class TransformerModel(nn.Module):
     def __init__(self, config):

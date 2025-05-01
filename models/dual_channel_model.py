@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from ..util.model_util import TransformerBlock, DualBlock, init_weights
+from .model_util import TransformerBlock, DualBlock, init_weights
 
 class DualChannelModel(nn.Module):
     def __init__(self, config):
