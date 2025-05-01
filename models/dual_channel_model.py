@@ -23,7 +23,7 @@ class DualChannelModel(nn.Module):
         self.ln_out = nn.LayerNorm(config.d_primary)
         self.lm_head = nn.Linear(config.d_primary, config.vocab_size, bias=False)
         
-        self.lm_head.weight = self.embedding.weight
+        self.lm_head.weight = self.primary_embedding.weight
         
         self.apply(init_weights)
 
@@ -40,7 +40,7 @@ class DualChannelModel(nn.Module):
         
         if self.config.n_transformer_blocks > 0:
             
-            x = torch.cat((torch.zeros_like(primary), secondary), dim=-1)
+            x = torch.cat(primary, torch.zeros_like(secondary), dim=-1)
             
             for transformer_block in self.transformer_blocks:
                 x = transformer_block(x)
