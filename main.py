@@ -56,7 +56,7 @@ def main():
             checkpoint_name = f"epoch_{args.checkpoint}.pth" if args.checkpoint != "best" else "best.pth"
             print(f"Loaded checkpoint from {checkpoint_name}")
         else:
-            print(f"Checkpoint not found: {checkpoint_name}")
+            print(f"Checkpoint not found, loading model from scratch")
     else:
         checkpoint = None
         
