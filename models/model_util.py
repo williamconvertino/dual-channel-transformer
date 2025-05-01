@@ -90,6 +90,7 @@ class TransformerBlock(nn.Module):
         
         self.config = config
         
+        self.ln_attn = nn.LayerNorm(config.d_latent)
         self.attention = Attention(config)
         
         self.feed_forward = FeedForward(config)
@@ -113,7 +114,7 @@ class DualBlock(nn.Module):
         self.ln_primary = nn.LayerNorm(config.d_primary)
         self.ln_secondary = nn.LayerNorm(config.d_secondary)
         
-        self.ln_ff = nn.LayerNorm(config.d_primary)
+        self.ln_ff = nn.LayerNorm(config.d_primary + config.d_secondary)
         
     def forward(self, primary, secondary):
 
