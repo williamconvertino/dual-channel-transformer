@@ -7,6 +7,8 @@ from dataset.tokenizer import Tokenizer
 from dataset.tinystories_dataset import TinyStoriesDataset
 from models.transformer_model import TransformerModel
 from models.dual_channel_model import DualChannelModel
+from models.cat_model import CatModel
+from models.g_model import GModel
 from util.loading import load_checkpoint, load_config
 
 def main():
@@ -32,6 +34,10 @@ def main():
         model = DualChannelModel(config)
     elif config.model_type == "transformer":
         model = TransformerModel(config)
+    elif config.model_type == "cat":
+        model = CatModel(config)
+    elif config.model_type == "g":
+        model = GModel(config)
     else:
         raise ValueError(f"Unknown model type: {config.model_type}")
     

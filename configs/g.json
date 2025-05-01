@@ -1,0 +1,9 @@
+{
+    "model_type": "g",
+    "max_seq_len": 128,
+    "n_heads": 8,
+    "d_latent": 512,
+    "p_primary": 0.5,
+    "n_dual_blocks": 2,
+    "n_transformer_blocks": 1
+}
