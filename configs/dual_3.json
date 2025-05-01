@@ -1,6 +1,8 @@
 {
-    "d_primary": 256,
-    "d_secondary": 256,
+    "model": "dual",
+    "max_seq_len": 128,
+    "d_latent": 512,
+    "p_primary": 0.5,
     "n_dual_blocks": 3,
     "n_transformer_blocks": 0
 }

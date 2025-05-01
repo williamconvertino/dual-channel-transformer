@@ -1,4 +1,6 @@
 {
-    "n_dual_blocks": 0,
+    "model": "transformer",
+    "max_seq_len": 128,
+    "d_latent": 512,
     "n_transformer_blocks": 3
 }
