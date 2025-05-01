@@ -155,12 +155,12 @@ class Evaluator:
     def _get_test_loss(self):
         
         self.model.eval()
+        self.model.to(self.device)
         
         test_loss = 0.0
         
         with torch.no_grad():
             for batch in self.splits["test"]:
-                batch = batch.to(self.device)
                 input_ids = batch.to(self.device)
                 x = input_ids[:, :-1]
                 targets = input_ids[:, 1:]

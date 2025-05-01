@@ -79,6 +79,8 @@ class Trainer:
     def train(self):
         
         self.model.train()
+        self.model.to(self.device)
+        
         best_val_loss = float("inf")
 
         for epoch in range(self.max_epochs):
