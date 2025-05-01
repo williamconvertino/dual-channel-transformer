@@ -138,7 +138,7 @@ class DualBlock(nn.Module):
         primary = primary + self.attention(q=qk, k=qk, v=v)
         
         if not self.last_layer:
-            secondary = self.feed_forward(self.ln_ff(torch.cat((primary, secondary), dim=-1)))
+            secondary = secondary + self.feed_forward(self.ln_ff(torch.cat((primary, secondary), dim=-1)))
             
         return primary, secondary
 
