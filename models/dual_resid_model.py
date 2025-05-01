@@ -17,7 +17,7 @@ class DualResidModel(nn.Module):
         self.ln_out = nn.LayerNorm(config.d_latent)
         self.lm_head = nn.Linear(config.d_latent, config.vocab_size, bias=False)
         
-        self.lm_head.weight = self.primary_embedding.weight
+        self.lm_head.weight = self.embedding.weight
         
         self.apply(init_weights)
 
