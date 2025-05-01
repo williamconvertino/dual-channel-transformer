@@ -91,7 +91,7 @@ class Trainer:
             batch_tqdm = self.splits["train"]
             total_loss = 0.0
             
-            for batch in batch_tqdm:
+            for i, batch in enumerate(batch_tqdm):
                 
                 batch = batch.to(self.device)
                 
@@ -108,9 +108,10 @@ class Trainer:
                 
                 # batch_tqdm.set_postfix(loss=train_loss)
                 time_elapsed = time.time() - start_time
-                time_remaining = (self.max_epochs - epoch - 1) * (time_elapsed / (epoch + 1))
+                time_remaining = (len(self.splits["train"]) - i - 1) * (time_elapsed / (i + 1)) 
                 time_remaining_formatted = time.strftime("%H:%M:%S", time.gmtime(time_remaining))
-                print(f"Epoch {epoch + 1}/{self.max_epochs} | Batch Loss: {train_loss:.4f} | Time Remaining: {time_remaining_formatted:.2f}s", end="\r")
+                print(f"Epoch {epoch + 1}/{self.max_epochs} | Batch {i + 1}/{len(self.splits['train'])} | Loss: {train_loss:.4f} | Time Remaining: {time_remaining_formatted}")
+                
                 
             val_loss = self._validate()
             avg_train_loss = total_loss / len(self.splits["train"])
