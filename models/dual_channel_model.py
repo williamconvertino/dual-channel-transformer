@@ -40,7 +40,7 @@ class DualChannelModel(nn.Module):
         
         if self.config.n_transformer_blocks > 0:
             
-            x = torch.cat(primary, torch.zeros_like(secondary), dim=-1)
+            x = torch.cat((primary, torch.zeros_like(secondary)), dim=-1)
             
             for transformer_block in self.transformer_blocks:
                 x = transformer_block(x)
