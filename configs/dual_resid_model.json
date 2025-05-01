@@ -1,5 +1,5 @@
 {
-    "model_type": "dual_resid_model",
+    "model_type": "dual_resid",
     "max_seq_len": 128,
     "n_heads": 8,
     "d_latent": 512,
