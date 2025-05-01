@@ -9,6 +9,9 @@ from models.transformer_model import TransformerModel
 from models.dual_channel_model import DualChannelModel
 from models.cat_model import CatModel
 from models.g_model import GModel
+from models.skip_model import SkipModel
+from models.g_skip_model import GSkipModel
+from models.cat_skip_model import CatSkipModel
 from util.loading import load_checkpoint, load_config
 
 def main():
@@ -38,13 +41,22 @@ def main():
         model = CatModel(config)
     elif config.model_type == "g":
         model = GModel(config)
+    elif config.model_type == "skip":
+        model = SkipModel(config)
+    elif config.model_type == "g_skip":
+        model = GSkipModel(config)
+    elif config.model_type == "cat_skip":
+        model = CatSkipModel(config)
     else:
         raise ValueError(f"Unknown model type: {config.model_type}")
     
     if args.checkpoint:
         checkpoint = load_checkpoint(model, args.checkpoint)
-        checkpoint_name = f"epoch_{args.checkpoint}.pth" if args.checkpoint != "best" else "best.pth"
-        print(f"Loaded checkpoint from {checkpoint_name}")
+        if checkpoint:
+            checkpoint_name = f"epoch_{args.checkpoint}.pth" if args.checkpoint != "best" else "best.pth"
+            print(f"Loaded checkpoint from {checkpoint_name}")
+        else:
+            print(f"Checkpoint not found: {checkpoint_name}")
     else:
         checkpoint = None
         

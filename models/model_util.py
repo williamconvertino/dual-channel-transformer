@@ -127,6 +127,32 @@ class DualBlock(nn.Module):
             
         return primary, secondary
     
+
+class SkipBlock(nn.Module):
+    def __init__(self, config):
+        super().__init__()
+        
+        self.config = config
+        
+        self.attention = Attention(config, d_q=config.d_primary, d_k=config.d_primary, d_v=config.d_secondary, d_out=config.d_primary)
+        self.feed_forward = FeedForward(config, d_in=config.d_secondary + config.d_primary, d_out=config.d_secondary)
+            
+        self.ln_primary = nn.LayerNorm(config.d_primary)
+        self.ln_secondary = nn.LayerNorm(config.d_secondary)
+        
+        self.ln_ff = nn.LayerNorm(config.d_primary + config.d_secondary)
+        
+    def forward(self, primary, secondary):
+
+        qk = self.ln_primary(primary)
+        v = self.ln_secondary(secondary)
+
+        primary = primary + self.attention(q=qk, k=qk, v=v)
+        
+        secondary = secondary + self.feed_forward(self.ln_ff(torch.cat((primary, secondary), dim=-1)))
+            
+        return primary, secondary
+    
 def init_weights(module):
         if isinstance(module, nn.LayerNorm):
             nn.init.ones_(module.weight)
