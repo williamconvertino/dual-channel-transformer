@@ -88,6 +88,8 @@ class Trainer:
             
             for batch in batch_tqdm:
                 
+                batch = batch.to(self.device)
+                
                 loss = self._step(batch)
         
                 self.optimizer.zero_grad()
