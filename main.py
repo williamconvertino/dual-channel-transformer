@@ -9,6 +9,8 @@ from models.transformer_model import TransformerModel
 from models.dual_channel_model import DualChannelModel
 from models.dual_resid_model import DualResidModel
 from models.alt_dual_resid_model import AltDualResidModel
+from models.secondary_resid_model import SecondaryResidModel
+from models.alt_secondary_resid_model import AltSecondaryResidModel
 from util.loading import load_checkpoint, load_config
 
 def main():
@@ -38,6 +40,10 @@ def main():
         model = TransformerModel(config)
     elif config.model_type == "alt_dual_resid":
         model = AltDualResidModel(config)
+    elif config.model_type == "secondary_resid":
+        model = SecondaryResidModel(config)
+    elif config.model_type == "alt_secondary_resid":
+        model = AltSecondaryResidModel(config)
     else:
         raise ValueError(f"Unknown model type: {config.model_type}")
     
