@@ -10,6 +10,7 @@ def load_checkpoint(model, epoch=None):
         checkpoint_path = f"checkpoints/{model.config.name}/best.pt"
     else:
         checkpoint_path = f"checkpoints/{model.config.name}/epoch_{epoch}.pt"
+    print(f"Searching for checkpoint: {checkpoint_path}")
     if not os.path.exists(checkpoint_path):
         return None
     return torch.load(checkpoint_path, weights_only=False, map_location="cpu")
