@@ -7,6 +7,7 @@ from dataset.tokenizer import Tokenizer
 from dataset.tinystories_dataset import TinyStoriesDataset
 from models.transformer_model import TransformerModel
 from models.dual_channel_model import DualChannelModel
+from models.dual_resid_model import DualResidModel
 from util.loading import load_checkpoint, load_config
 
 def main():
@@ -30,6 +31,8 @@ def main():
     
     if config.model_type == "dual":
         model = DualChannelModel(config)
+    elif config.model_type == "dual_resid":
+        model = DualResidModel(config)
     elif config.model_type == "transformer":
         model = TransformerModel(config)
     else:

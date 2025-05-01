@@ -4,6 +4,18 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torchtune.modules import RotaryPositionalEmbeddings
 
+def init_weights(module):
+        if isinstance(module, nn.LayerNorm):
+            nn.init.ones_(module.weight)
+            if module.bias is not None:
+                nn.init.zeros_(module.bias)
+        elif isinstance(module, nn.Linear):
+            nn.init.xavier_normal_(module.weight)
+            if module.bias is not None:
+                nn.init.zeros_(module.bias)
+        elif isinstance(module, nn.Embedding):
+            nn.init.normal_(module.weight, mean=0.0, std=0.02)
+    
 class Attention(nn.Module):
     def __init__(self, config, d_q=None, d_k=None, d_v=None, d_out=None):
         super().__init__()
@@ -130,15 +142,27 @@ class DualBlock(nn.Module):
             
         return primary, secondary
 
-def init_weights(module):
-        if isinstance(module, nn.LayerNorm):
-            nn.init.ones_(module.weight)
-            if module.bias is not None:
-                nn.init.zeros_(module.bias)
-        elif isinstance(module, nn.Linear):
-            nn.init.xavier_normal_(module.weight)
-            if module.bias is not None:
-                nn.init.zeros_(module.bias)
-        elif isinstance(module, nn.Embedding):
-            nn.init.normal_(module.weight, mean=0.0, std=0.02)
-    
+class DualResidBlock(nn.Module):
+    def __init__(self, config, layer=None):
+        super().__init__()
+        
+        self.config = config
+        
+        self.last_layer = layer is not None and layer == config.n_dual_blocks - 1
+        
+        self.ln_attn = nn.LayerNorm(config.d_latent)
+        self.attention = Attention(config)
+        
+        self.feed_forward = FeedForward(config)
+        self.ln_ff = nn.LayerNorm(config.d_latent)
+            
+    def forward(self, primary, secondary):
+
+        primary = primary + self.attention(self.ln_attn(secondary))
+        
+        if self.last_layer:
+            primary = primary + self.feed_forward(self.ln_ff(primary))
+        else:
+            secondary = secondary + self.feed_forward(self.ln_ff(primary))
+        
+        return primary, secondary
