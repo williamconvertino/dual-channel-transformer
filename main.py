@@ -13,6 +13,7 @@ from models.skip_model import SkipModel
 from models.g_skip_model import GSkipModel
 from models.cat_skip_model import CatSkipModel
 from models.share_embed_model import ShareEmbedModel
+from models.loose_model import LooseModel
 from util.loading import load_checkpoint, load_config
 
 def main():
@@ -50,6 +51,8 @@ def main():
         model = CatSkipModel(config)
     elif config.model_type == "share_embed":
         model = ShareEmbedModel(config)
+    elif config.model_type == "loose":
+        model = LooseModel(config)
     else:
         raise ValueError(f"Unknown model type: {config.model_type}")
     
