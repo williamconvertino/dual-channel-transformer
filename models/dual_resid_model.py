@@ -26,7 +26,7 @@ class DualResidModel(nn.Module):
         B, S = x.shape
         device = x.device
         
-        primary, secondary = self.embedding(x)
+        primary = secondary = self.embedding(x)
         
         for dual_block in self.dual_blocks:
             primary, secondary = dual_block(primary, secondary)
