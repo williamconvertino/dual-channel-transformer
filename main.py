@@ -7,13 +7,6 @@ from dataset.tokenizer import Tokenizer
 from dataset.tinystories_dataset import TinyStoriesDataset
 from models.transformer_model import TransformerModel
 from models.dual_channel_model import DualChannelModel
-from models.cat_model import CatModel
-from models.g_model import GModel
-from models.skip_model import SkipModel
-from models.g_skip_model import GSkipModel
-from models.cat_skip_model import CatSkipModel
-from models.share_embed_model import ShareEmbedModel
-from models.loose_model import LooseModel
 from util.loading import load_checkpoint, load_config
 
 def main():
@@ -39,20 +32,6 @@ def main():
         model = DualChannelModel(config)
     elif config.model_type == "transformer":
         model = TransformerModel(config)
-    elif config.model_type == "cat":
-        model = CatModel(config)
-    elif config.model_type == "g":
-        model = GModel(config)
-    elif config.model_type == "skip":
-        model = SkipModel(config)
-    elif config.model_type == "g_skip":
-        model = GSkipModel(config)
-    elif config.model_type == "cat_skip":
-        model = CatSkipModel(config)
-    elif config.model_type == "share_embed":
-        model = ShareEmbedModel(config)
-    elif config.model_type == "loose":
-        model = LooseModel(config)
     else:
         raise ValueError(f"Unknown model type: {config.model_type}")
     

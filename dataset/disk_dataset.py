@@ -38,7 +38,7 @@ class DiskDataset:
         self.stride = int(max_seq_len * self.stride_multiplier)
         self.do_shuffle = do_shuffle
         self.batch_size = batch_size
-        self.allow_overlap = allow_overlap # Whether to allow overlapping sequences (often used in training)
+        self.allow_overlap = allow_overlap # Whether to allow overlapping sequences (Used in training, not in eval)
 
         self.data = np.memmap(file_path, dtype="int32", mode="r")
         self.file_size = os.path.getsize(self.file_path) // np.dtype("int32").itemsize
@@ -53,26 +53,23 @@ class DiskDataset:
         batch = []
 
         def pop_buffer():
-            pop_index = random.randint(0, len(buffer) - 1) if self.do_shuffle else 0 # Randomly select index if shuffling is enabled
+            pop_index = random.randint(0, len(buffer) - 1) if self.do_shuffle else 0
             seq = buffer.pop(pop_index).copy()
             eos_token_id = self.tokenizer.eos_token_id
             pad_token_id = self.tokenizer.pad_token_id
 
             if not self.allow_overlap:
-                # Replace all tokens after an EOS with the pad token.
                 indices = np.where(seq == eos_token_id)[0]
                 if indices.size > 0:
                     first_eos = indices[0]
                     seq[first_eos + 1 :] = pad_token_id
             return torch.tensor(seq)
 
-        # Read chunks from the memmapped data until there isn’t enough left.
         while read_pointer + self.max_seq_len <= len(self.data):
             chunk = self.data[read_pointer : read_pointer + self.max_seq_len].copy()
             buffer.append(chunk)
             read_pointer += self.stride
 
-            # When the buffer is full enough, drain enough sequences into a batch.
             if len(buffer) >= self.shuffle_buffer_size:
                 while buffer and len(batch) < self.batch_size:
                     batch.append(pop_buffer())
@@ -80,37 +77,32 @@ class DiskDataset:
                     yield torch.stack(batch).long()
                     batch = []
 
-        # Drain any remaining sequences in the buffer.
         while buffer:
             batch.append(pop_buffer())
             if len(batch) == self.batch_size:
                 yield torch.stack(batch).long()
                 batch = []
         
-        # If there’s an incomplete batch left, yield it just once.
         if batch:
             yield torch.stack(batch).long()
 
     def preprocess(examples, tokenizer, separate_lines=True):
-        # Remove unwanted characters
+        
+        # Remove/replace unwanted characters
         texts = [DiskDataset.re_replace.sub(lambda m: DiskDataset.replacements[m.group()], text) for text in examples["text"]]
         
-        # Tokenize text and add EOS and BOS tokens to each sequence
         examples["input_ids"] = tokenizer.encode(texts, eos=separate_lines, bos=separate_lines)
         
         return examples
 
     def generate_data_file(dataset, file_path, tokenizer, separate_lines = True):
         
-        # Preprocess data
         dataset = dataset.map(lambda x: DiskDataset.preprocess(x, tokenizer, separate_lines), batched=True, remove_columns=["text"])
         file_size = sum([len(example) for example in dataset["input_ids"]])
         
-        # Initialize memmap array
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
         memmap_array = np.memmap(file_path, dtype="int32", mode="w+", shape=(file_size,))
         
-        # Write data to memmap array
         buffer = []
         write_pointer = 0
         buffer_size=1024

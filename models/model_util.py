@@ -103,19 +103,21 @@ class TransformerBlock(nn.Module):
         return x
     
 class DualBlock(nn.Module):
-    def __init__(self, config):
+    def __init__(self, config, layer=None):
         super().__init__()
         
         self.config = config
         
-        self.attention = Attention(config, d_q=config.d_primary, d_k=config.d_primary, d_v=config.d_secondary, d_out=config.d_primary)
-        self.feed_forward = FeedForward(config, d_in=config.d_secondary + config.d_primary, d_out=config.d_secondary)
-            
+        self.last_layer = layer is not None and layer == config.n_dual_blocks - 1    
+        
         self.ln_primary = nn.LayerNorm(config.d_primary)
         self.ln_secondary = nn.LayerNorm(config.d_secondary)
+        self.attention = Attention(config, d_q=config.d_primary, d_k=config.d_primary, d_v=config.d_secondary, d_out=config.d_primary)
         
-        self.ln_ff = nn.LayerNorm(config.d_primary + config.d_secondary)
-        
+        if not self.last_layer:
+            self.feed_forward = FeedForward(config, d_in=config.d_secondary + config.d_primary, d_out=config.d_secondary)
+            self.ln_ff = nn.LayerNorm(config.d_primary + config.d_secondary)
+            
     def forward(self, primary, secondary):
 
         qk = self.ln_primary(primary)
@@ -123,58 +125,11 @@ class DualBlock(nn.Module):
 
         primary = primary + self.attention(q=qk, k=qk, v=v)
         
-        secondary = self.feed_forward(self.ln_ff(torch.cat((primary, secondary), dim=-1)))
+        if not self.last_layer:
+            secondary = self.feed_forward(self.ln_ff(torch.cat((primary, secondary), dim=-1)))
             
         return primary, secondary
 
-class SkipBlock(nn.Module):
-    def __init__(self, config):
-        super().__init__()
-        
-        self.config = config
-        
-        self.attention = Attention(config, d_q=config.d_primary, d_k=config.d_primary, d_v=config.d_secondary, d_out=config.d_primary)
-        self.feed_forward = FeedForward(config, d_in=config.d_secondary + config.d_primary, d_out=config.d_secondary)
-            
-        self.ln_primary = nn.LayerNorm(config.d_primary)
-        self.ln_secondary = nn.LayerNorm(config.d_secondary)
-        
-        self.ln_ff = nn.LayerNorm(config.d_primary + config.d_secondary)
-        
-    def forward(self, primary, secondary):
-
-        qk = self.ln_primary(primary)
-        v = self.ln_secondary(secondary)
-
-        primary = primary + self.attention(q=qk, k=qk, v=v)
-        
-        secondary = secondary + self.feed_forward(self.ln_ff(torch.cat((primary, secondary), dim=-1)))
-            
-        return primary, secondary
-    
-   
-class LooseBlock(nn.Module):
-    def __init__(self, config):
-        super().__init__()
-        
-        self.config = config
-        
-        self.attention = Attention(config, d_q=config.d_primary + config.d_secondary, d_k=config.d_primary + config.d_secondary, d_v=config.d_primary + config.d_secondary, d_out=config.d_primary)
-        self.feed_forward = FeedForward(config, d_in=config.d_secondary + config.d_primary, d_out=config.d_secondary)
-            
-        self.ln_attn = nn.LayerNorm(config.d_primary + config.d_secondary)
-        self.ln_secondary = nn.LayerNorm(config.d_secondary)
-        
-        self.ln_ff = nn.LayerNorm(config.d_primary + config.d_secondary)
-        
-    def forward(self, primary, secondary):
-
-        primary = primary + self.attention(self.ln_attn(torch.cat((primary, secondary), dim=-1)))
-        
-        secondary = self.feed_forward(self.ln_ff(torch.cat((primary, secondary), dim=-1)))
-            
-        return primary, secondary
-    
 def init_weights(module):
         if isinstance(module, nn.LayerNorm):
             nn.init.ones_(module.weight)

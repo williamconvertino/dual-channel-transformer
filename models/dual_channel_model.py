@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from .model_util import TransformerBlock, DualBlock, init_weights
+from .model_util import TransformerBlock, DualBlock, FeedForward, init_weights
 
 class DualChannelModel(nn.Module):
     def __init__(self, config):
@@ -13,8 +13,10 @@ class DualChannelModel(nn.Module):
         self.secondary_embedding = nn.Embedding(config.vocab_size, config.d_secondary)
         
         self.dual_blocks = nn.ModuleList([
-            DualBlock(config) for _ in range(config.n_dual_blocks)
+            DualBlock(config, layer) for layer in range(config.n_dual_blocks)
         ])
+        
+        self.post_dual_ff = FeedForward(config, d_in=config.d_primary, d_out=config.d_primary)
         
         self.transformer_blocks = nn.ModuleList([
             TransformerBlock(config) for _ in range(config.n_transformer_blocks)
@@ -37,6 +39,8 @@ class DualChannelModel(nn.Module):
         
         for dual_block in self.dual_blocks:
             primary, secondary = dual_block(primary, secondary)
+        
+        primary = primary + self.post_dual_ff(primary)
         
         if self.config.n_transformer_blocks > 0:
             
