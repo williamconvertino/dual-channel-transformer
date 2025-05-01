@@ -7,9 +7,9 @@ def load_checkpoint(model, epoch=None):
     if epoch is None:
         return None
     elif epoch == "best":
-        checkpoint_path = f"checkpoints/{model.config.name}/best.pt"
+        checkpoint_path = f"checkpoints/{model.config.name}/best.pth"
     else:
-        checkpoint_path = f"checkpoints/{model.config.name}/epoch_{epoch}.pt"
+        checkpoint_path = f"checkpoints/{model.config.name}/epoch_{epoch}.pth"
     print(f"Searching for checkpoint: {checkpoint_path}")
     if not os.path.exists(checkpoint_path):
         return None
