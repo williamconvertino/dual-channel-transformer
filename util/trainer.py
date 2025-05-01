@@ -1,4 +1,5 @@
 import os
+import time
 from datetime import datetime
 from tqdm import tqdm
 
@@ -85,7 +86,9 @@ class Trainer:
 
         for epoch in range(self.max_epochs):
             
-            batch_tqdm = tqdm(self.splits["train"], desc=f"Epoch {epoch + 1}/{self.max_epochs}", leave=False)
+            start_time = time.time()
+            # batch_tqdm = tqdm(self.splits["train"], desc=f"Epoch {epoch + 1}/{self.max_epochs}", leave=False)
+            batch_tqdm = self.splits["train"]
             total_loss = 0.0
             
             for batch in batch_tqdm:
@@ -103,7 +106,11 @@ class Trainer:
                 train_loss = loss.item()
                 total_loss += train_loss
                 
-                batch_tqdm.set_postfix(loss=train_loss)
+                # batch_tqdm.set_postfix(loss=train_loss)
+                time_elapsed = time.time() - start_time
+                time_remaining = (self.max_epochs - epoch - 1) * (time_elapsed / (epoch + 1))
+                time_remaining_formatted = time.strftime("%H:%M:%S", time.gmtime(time_remaining))
+                print(f"Epoch {epoch + 1}/{self.max_epochs} | Batch Loss: {train_loss:.4f} | Time Remaining: {time_remaining_formatted:.2f}s", end="\r")
                 
             val_loss = self._validate()
             avg_train_loss = total_loss / len(self.splits["train"])
