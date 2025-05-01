@@ -12,6 +12,7 @@ from models.g_model import GModel
 from models.skip_model import SkipModel
 from models.g_skip_model import GSkipModel
 from models.cat_skip_model import CatSkipModel
+from models.share_embed_model import ShareEmbedModel
 from util.loading import load_checkpoint, load_config
 
 def main():
@@ -47,6 +48,8 @@ def main():
         model = GSkipModel(config)
     elif config.model_type == "cat_skip":
         model = CatSkipModel(config)
+    elif config.model_type == "share_embed":
+        model = ShareEmbedModel(config)
     else:
         raise ValueError(f"Unknown model type: {config.model_type}")
     
