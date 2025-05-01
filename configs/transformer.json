@@ -1,6 +1,7 @@
 {
     "model_type": "transformer",
     "max_seq_len": 128,
+    "n_heads": 8,
     "d_latent": 512,
     "n_transformer_blocks": 3
 }

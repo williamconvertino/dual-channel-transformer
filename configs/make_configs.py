@@ -7,6 +7,7 @@ for n in range(1, 10):
     config = {
         "model_type": "dual",
         "max_seq_len": 128,
+        "n_heads": 8,
         "d_latent": 512,
         "p_primary": p,
         "n_dual_blocks": 2,
