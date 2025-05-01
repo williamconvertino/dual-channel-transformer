@@ -8,6 +8,7 @@ from dataset.tinystories_dataset import TinyStoriesDataset
 from models.transformer_model import TransformerModel
 from models.dual_channel_model import DualChannelModel
 from models.dual_resid_model import DualResidModel
+from models.alt_dual_resid_model import AltDualResidModel
 from util.loading import load_checkpoint, load_config
 
 def main():
@@ -35,21 +36,10 @@ def main():
         model = DualResidModel(config)
     elif config.model_type == "transformer":
         model = TransformerModel(config)
+    elif config.model_type == "alt_dual_resid":
+        model = AltDualResidModel(config)
     else:
         raise ValueError(f"Unknown model type: {config.model_type}")
-    
-    # if args.checkpoint:
-    #     checkpoint = load_checkpoint(model, args.checkpoint)
-    #     if checkpoint:
-    #         checkpoint_name = f"epoch_{args.checkpoint}.pth" if args.checkpoint != "best" else "best.pth"
-    #         print(f"Loaded checkpoint from {checkpoint_name}")
-    #     else:
-    #         print(f"Checkpoint not found, loading model from scratch")
-    # else:
-    #     checkpoint = None
-        
-    # if checkpoint:
-    #     model.load_state_dict(checkpoint, strict=False)
     
     splits = TinyStoriesDataset.get_splits(tokenizer, config.max_seq_len)
     

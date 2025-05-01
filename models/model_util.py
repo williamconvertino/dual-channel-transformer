@@ -166,3 +166,28 @@ class DualResidBlock(nn.Module):
             secondary = secondary + self.feed_forward(self.ln_ff(primary))
         
         return primary, secondary
+
+class AltDualResidBlock(nn.Module):
+    def __init__(self, config, layer=None):
+        super().__init__()
+        
+        self.config = config
+        
+        self.last_layer = layer is not None and layer == config.n_dual_blocks - 1
+        
+        self.ln_attn = nn.LayerNorm(config.d_latent)
+        self.attention = Attention(config)
+        
+        self.feed_forward = FeedForward(config)
+        self.ln_ff = nn.LayerNorm(config.d_latent)
+            
+    def forward(self, primary, secondary):
+
+        primary = primary + self.attention(self.ln_attn(secondary))
+        
+        if self.last_layer:
+            primary = primary + self.feed_forward(self.ln_ff(primary))
+        else:
+            secondary = primary + self.feed_forward(self.ln_ff(primary)) # Uses primary for skip connection
+        
+        return primary, secondary
