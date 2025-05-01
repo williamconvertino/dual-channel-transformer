@@ -5,8 +5,17 @@ import torch.nn.functional as F
 from torchtune.modules import RotaryPositionalEmbeddings
 
 class Attention(nn.Module):
-    def __init__(self, config, d_q, d_k, d_v, d_out):
+    def __init__(self, config, d_q=None, d_k=None, d_v=None, d_out=None):
         super().__init__()
+        
+        if d_q is None:
+            d_q = config.d_latent
+        if d_k is None:
+            d_k = config.d_latent
+        if d_v is None:
+            d_v = config.d_latent
+        if d_out is None:
+            d_out = config.d_latent
         
         self.config = config
         
@@ -54,8 +63,13 @@ class Attention(nn.Module):
         return attn_output
     
 class FeedForward(nn.Module):
-    def __init__(self, config, d_in, d_out):
+    def __init__(self, config, d_in=None, d_out=None):
         super().__init__()
+
+        if d_in is None:
+            d_in = config.d_latent
+        if d_out is None:
+            d_out = config.d_latent
 
         self.fc_1 = nn.Linear(d_in, 4 * config.d_latent)
         self.fc_2 = nn.Linear(4 * config.d_latent, d_out)
@@ -71,32 +85,14 @@ class FeedForward(nn.Module):
         return x
     
 class TransformerBlock(nn.Module):
-    def __init__(self, config, layer):
+    def __init__(self, config):
         super().__init__()
         
         self.config = config
         
-        if config.n_dual_blocks > 0 and layer == 0:
-            if config.concat_streams_for_transformer:
-                d_q = config.d_primary + config.d_secondary
-                d_k = config.d_primary + config.d_secondary
-                d_v = config.d_primary + config.d_secondary
-
-                self.ln_attn = nn.LayerNorm(config.d_primary + config.d_secondary)
-            else:
-                d_q = config.d_primary
-                d_k = config.d_primary
-                d_v = config.d_primary
-                self.ln_attn = nn.LayerNorm(config.d_primary)
-        else:
-            d_q = config.d_latent
-            d_k = config.d_latent
-            d_v = config.d_latent
-            self.ln_attn = nn.LayerNorm(config.d_latent)
-
-        self.attention = Attention(config, d_q=d_q, d_k=d_k, d_v=d_v, d_out=config.d_latent)
+        self.attention = Attention(config)
         
-        self.feed_forward = FeedForward(config, d_in=config.d_latent, d_out=config.d_latent)
+        self.feed_forward = FeedForward(config)
         self.ln_ff = nn.LayerNorm(config.d_latent)
         
     def forward(self, x):
@@ -106,25 +102,18 @@ class TransformerBlock(nn.Module):
         return x
     
 class DualBlock(nn.Module):
-    def __init__(self, config, layer):
+    def __init__(self, config):
         super().__init__()
         
         self.config = config
         
         self.attention = Attention(config, d_q=config.d_primary, d_k=config.d_primary, d_v=config.d_secondary, d_out=config.d_primary)
-        
-        if config.concat_streams_for_ff:
-            self.feed_forward = FeedForward(config, d_in=config.d_primary + config.d_secondary, d_out=config.d_secondary)
-        else:
-            self.feed_forward = FeedForward(config, d_in=config.d_primary, d_out=config.d_secondary)
+        self.feed_forward = FeedForward(config, d_in=config.d_secondary + config.d_primary, d_out=config.d_secondary)
             
         self.ln_primary = nn.LayerNorm(config.d_primary)
         self.ln_secondary = nn.LayerNorm(config.d_secondary)
         
-        if config.concat_streams_for_ff:
-            self.ln_ff = nn.LayerNorm(config.d_primary + config.d_secondary)
-        else:
-            self.ln_ff = nn.LayerNorm(config.d_primary)
+        self.ln_ff = nn.LayerNorm(config.d_primary)
         
     def forward(self, primary, secondary):
 
@@ -133,17 +122,19 @@ class DualBlock(nn.Module):
 
         primary = primary + self.attention(q=qk, k=qk, v=v)
         
-        if self.config.concat_streams_for_ff:
-            ff_in = torch.cat((primary, secondary), dim=-1)
-        else:
-            ff_in = primary
-        
-        ff_in = self.ln_ff(ff_in)
-        ff_out = self.feed_forward(ff_in)
-        
-        if self.config.dual_ff_residual:
-            secondary = secondary + ff_out
-        else:
-            secondary = ff_out
+        secondary = self.feed_forward(self.ln_ff(torch.cat((primary, secondary), dim=-1)))
             
         return primary, secondary
+    
+def init_weights(module):
+        if isinstance(module, nn.LayerNorm):
+            nn.init.ones_(module.weight)
+            if module.bias is not None:
+                nn.init.zeros_(module.bias)
+        elif isinstance(module, nn.Linear):
+            nn.init.xavier_normal_(module.weight)
+            if module.bias is not None:
+                nn.init.zeros_(module.bias)
+        elif isinstance(module, nn.Embedding):
+            nn.init.normal_(module.weight, mean=0.0, std=0.02)
+    

@@ -5,7 +5,8 @@ from util.trainer import Trainer
 from util.evaluator import Evaluator
 from dataset.tokenizer import Tokenizer
 from dataset.tinystories_dataset import TinyStoriesDataset
-from models.language_model import LanguageModel
+from models.transformer_model import TransformerModel
+from models.dual_channel_model import DualChannelModel
 from util.loading import load_checkpoint, load_config
 
 def main():
@@ -27,7 +28,12 @@ def main():
     tokenizer = Tokenizer()
     config.vocab_size = tokenizer.vocab_size
     
-    model = LanguageModel(config)
+    if config.model_type == "dual":
+        model = DualChannelModel(config)
+    elif config.model_type == "transformer":
+        model = TransformerModel(config)
+    else:
+        raise ValueError(f"Unknown model type: {config.model_type}")
     
     if args.checkpoint:
         checkpoint = load_checkpoint(model, args.checkpoint)

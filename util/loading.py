@@ -32,9 +32,15 @@ def load_config(config_name):
                     d[k] = v
         return SimpleNamespace(**d)
     
-    default_config = json.load(open(default_config_dir))
+    # default_config = json.load(open(default_config_dir))
+    default_config = None
     config = json.load(open(config_dir))
     config = dict_to_namespace(config, default_config)
     config.name = config_name
+    
+    if hasattr(config, "p_primary"):
+        config.d_primary = int(config.d_latent * config.p_primary)
+        config.d_secondary = config.d_latent - config.d_primary
+        print(f"Initializing config with d_primary: {config.d_primary}, d_secondary: {config.d_secondary}")
     
     return config
