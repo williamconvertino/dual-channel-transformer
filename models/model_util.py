@@ -120,7 +120,7 @@ class ReducedScratchSpaceBlock(nn.Module):
         self.config = config
         
         self.attention = Attention(config, d_q=config.d_reduced, d_k=config.d_reduced, d_v=config.d_reduced, d_out=config.d_reduced)
-        self.ln_attn = nn.LayerNorm(config)
+        self.ln_attn = nn.LayerNorm(config.d_reduced)
         
         self.mlp = MLP(config, d_in=config.d_reduced, d_out=config.d_reduced)
         self.ln_mlp = nn.LayerNorm(config.d_reduced)
