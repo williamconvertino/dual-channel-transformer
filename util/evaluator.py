@@ -4,7 +4,7 @@ import torch.nn.functional as F
 from .trainer import Trainer
 from .device import get_device
 
-def generate_text_greedy(model, tokenizer, prompt, max_length=50, temperature=1.0):
+def generate_text_greedy(model, tokenizer, prompt, device, max_length=50, temperature=1.0):
     
     model.eval()
     
@@ -30,7 +30,7 @@ def generate_text_greedy(model, tokenizer, prompt, max_length=50, temperature=1.
     
     return tokenizer.decode(generated[0].tolist()[input_size:])
 
-def generate_text_beam(model, tokenizer, prompt, max_length=50, beam_width=3):
+def generate_text_beam(model, tokenizer, prompt, device, max_length=50, beam_width=3):
     
     model.eval()
     
@@ -68,7 +68,7 @@ def generate_text_beam(model, tokenizer, prompt, max_length=50, beam_width=3):
     best_seq = beams[0][0]
     return tokenizer.decode(best_seq[0].tolist()[input_size:])
 
-def generate_text_topk(model, tokenizer, prompt, max_length=50, temperature=1.0, top_k=40):
+def generate_text_topk(model, tokenizer, prompt, device, max_length=50, temperature=1.0, top_k=40):
     
     model.eval()
     
@@ -98,7 +98,7 @@ def generate_text_topk(model, tokenizer, prompt, max_length=50, temperature=1.0,
     
     return tokenizer.decode(generated[0].tolist()[input_size:])
 
-def generate_text_nucleus(model, tokenizer, prompt, max_length=50, temperature=1.0, top_p=0.9):
+def generate_text_nucleus(model, tokenizer, prompt, device, max_length=50, temperature=1.0, top_p=0.9):
 
     model.eval()
     
@@ -192,7 +192,7 @@ class Evaluator:
             print(prompt)
             print("-" * 50)
             
-            generated_text = generate_text_nucleus(self.model, self.tokenizer, prompt, max_length=50)
+            generated_text = generate_text_nucleus(self.model, self.tokenizer, prompt, self.device)
             print("Generated Text:")
             print(generated_text)
             print("=" * 50)
