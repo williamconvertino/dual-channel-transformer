@@ -74,7 +74,7 @@ class Attention(nn.Module):
         
         return attn_output
     
-class FeedForward(nn.Module):
+class MLP(nn.Module):
     def __init__(self, config, d_in=None, d_out=None):
         super().__init__()
 
@@ -102,92 +102,53 @@ class TransformerBlock(nn.Module):
         
         self.config = config
         
-        self.ln_attn = nn.LayerNorm(config.d_latent)
         self.attention = Attention(config)
+        self.ln_attn = nn.LayerNorm(config.d_latent)
         
-        self.feed_forward = FeedForward(config)
-        self.ln_ff = nn.LayerNorm(config.d_latent)
+        self.mlp = MLP(config)
+        self.ln_mlp = nn.LayerNorm(config.d_latent)
         
     def forward(self, x):
         x = x + self.attention(self.ln_attn(x))
-        x = x + self.feed_forward(self.ln_ff(x))
-        
+        x = x + self.mlp(self.ln_mlp(x))
         return x
     
+class ReducedScratchSpaceBlock(nn.Module):
+    def __init__(self, config):
+        super().__init__()
+        
+        self.config = config
+        
+        self.attention = Attention(config, d_q=config.d_reduced, d_k=config.d_reduced, d_v=config.d_reduced, d_out=config.d_reduced)
+        self.ln_attn = nn.LayerNorm(config)
+        
+        self.mlp = MLP(config, d_in=config.d_reduced, d_out=config.d_reduced)
+        self.ln_mlp = nn.LayerNorm(config.d_reduced)
+        
+    def forward(self, x):
+        x = x + self.attention(self.ln_attn(x))
+        x = x + self.mlp(self.ln_mlp(x))
+        return x
+
 class DualBlock(nn.Module):
-    def __init__(self, config, layer=None):
+    def __init__(self, config):
         super().__init__()
         
         self.config = config
         
-        self.last_layer = layer is not None and layer == config.n_dual_blocks - 1    
-        
-        self.ln_primary = nn.LayerNorm(config.d_primary)
-        self.ln_secondary = nn.LayerNorm(config.d_secondary)
-        self.attention = Attention(config, d_q=config.d_primary, d_k=config.d_primary, d_v=config.d_secondary, d_out=config.d_primary)
-        
-        if not self.last_layer:
-            self.feed_forward = FeedForward(config, d_in=config.d_secondary + config.d_primary, d_out=config.d_secondary)
-            self.ln_ff = nn.LayerNorm(config.d_primary + config.d_secondary)
-            
-    def forward(self, primary, secondary):
-
-        qk = self.ln_primary(primary)
-        v = self.ln_secondary(secondary)
-
-        primary = primary + self.attention(q=qk, k=qk, v=v)
-        
-        if not self.last_layer:
-            secondary = secondary + self.feed_forward(self.ln_ff(torch.cat((primary, secondary), dim=-1)))
-            
-        return primary, secondary
-
-class DualResidBlock(nn.Module):
-    def __init__(self, config, layer=None):
-        super().__init__()
-        
-        self.config = config
-        
-        self.last_layer = layer is not None and layer == config.n_dual_blocks - 1
-        
-        self.ln_attn = nn.LayerNorm(config.d_latent)
         self.attention = Attention(config)
+        self.ln_attn = nn.LayerNorm(config.d_latent)
         
-        self.feed_forward = FeedForward(config)
-        self.ln_ff = nn.LayerNorm(config.d_latent)
+        self.mlp = MLP(config)
+        self.ln_mlp = nn.LayerNorm(config.d_latent)
             
     def forward(self, primary, secondary):
 
         primary = primary + self.attention(self.ln_attn(secondary))
         
-        if self.last_layer:
-            primary = primary + self.feed_forward(self.ln_ff(primary))
+        if self.config.mlp_residual == "secondary":
+            secondary = secondary + self.mlp(self.ln_mlp(primary))
         else:
-            secondary = secondary + self.feed_forward(self.ln_ff(primary))
-        
-        return primary, secondary
-
-class AltDualResidBlock(nn.Module):
-    def __init__(self, config, layer=None):
-        super().__init__()
-        
-        self.config = config
-        
-        self.last_layer = layer is not None and layer == config.n_dual_blocks - 1
-        
-        self.ln_attn = nn.LayerNorm(config.d_latent)
-        self.attention = Attention(config)
-        
-        self.feed_forward = FeedForward(config)
-        self.ln_ff = nn.LayerNorm(config.d_latent)
-            
-    def forward(self, primary, secondary):
-
-        primary = primary + self.attention(self.ln_attn(secondary))
-        
-        if self.last_layer:
-            primary = primary + self.feed_forward(self.ln_ff(primary))
-        else:
-            secondary = primary + self.feed_forward(self.ln_ff(primary)) # Uses primary for skip connection
+            secondary = primary + self.mlp(self.ln_mlp(primary)) # Default behavior
         
         return primary, secondary

@@ -1,4 +1,3 @@
-Transformer
-Dual Channel (Varying Primary/Secondary)
-Reduced Embedding
-Separate Streams
+Transformer:
+Dual Model:
+Alt Dual Model (Primary Skip):

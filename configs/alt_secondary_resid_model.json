@@ -1,7 +1,0 @@
-{
-    "model_type": "alt_secondary_resid",
-    "max_seq_len": 128,
-    "n_heads": 8,
-    "d_latent": 512,
-    "n_dual_blocks": 3
-}

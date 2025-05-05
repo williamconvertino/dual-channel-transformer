@@ -1,9 +1,0 @@
-{
-    "model_type": "dual",
-    "max_seq_len": 128,
-    "n_heads": 8,
-    "d_latent": 512,
-    "p_primary": 0.9,
-    "n_dual_blocks": 2,
-    "n_transformer_blocks": 1
-}

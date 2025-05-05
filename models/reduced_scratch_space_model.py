@@ -1,21 +1,23 @@
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from .model_util import TransformerBlock, init_weights
+from .model_util import ReducedScratchSpaceBlock, init_weights
 
-class TransformerModel(nn.Module):
+class ReducedScratchSpaceModel(nn.Module):
     def __init__(self, config):
         super().__init__()
         
         self.config = config
+        self.config.d_reduced = config.d_latent - int(config.d_latent * config.p_reduced) 
         
-        self.embedding = nn.Embedding(config.vocab_size, config.d_latent)
+        self.embedding = nn.Embedding(config.vocab_size, config.d_reduced)
         
         self.transformer_blocks = nn.ModuleList([
-            TransformerBlock(config) for _ in range(config.n_layers)
+            ReducedScratchSpaceBlock(config) for _ in range(config.n_layers)
         ])
         
-        self.ln_out = nn.LayerNorm(config.d_latent)
-        self.lm_head = nn.Linear(config.d_latent, config.vocab_size, bias=False)
+        self.ln_out = nn.LayerNorm(config.d_reduced)
+        self.lm_head = nn.Linear(config.d_reduced, config.vocab_size, bias=False)
         
         self.lm_head.weight = self.embedding.weight
         
@@ -26,9 +28,12 @@ class TransformerModel(nn.Module):
         B, S = x.shape
         
         x = self.embedding(x)
+        x = torch.cat([x, torch.zeros(B, S, self.config.d_latent - self.config.d_reduced, device=x.device)], dim=-1) # Pad for easier compatibility
         
         for transformer_block in self.transformer_blocks:
             x = transformer_block(x)
+        
+        x = x[:, :, :self.config.d_reduced] # Remove padding
         
         x = self.ln_out(x)
         

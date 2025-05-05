@@ -1,8 +1,8 @@
 import torch.nn as nn
 import torch.nn.functional as F
-from .model_util import DualResidBlock, init_weights
+from .model_util import DualBlock, init_weights
 
-class SecondaryResidModel(nn.Module):
+class DualModel(nn.Module):
     def __init__(self, config):
         super().__init__()
         
@@ -11,7 +11,7 @@ class SecondaryResidModel(nn.Module):
         self.embedding = nn.Embedding(config.vocab_size, config.d_latent)
         
         self.dual_blocks = nn.ModuleList([
-            DualResidBlock(config, layer) for layer in range(config.n_dual_blocks)
+            DualBlock(config) for _ in range(config.n_layers)
         ])
         
         self.ln_out = nn.LayerNorm(config.d_latent)
@@ -31,8 +31,8 @@ class SecondaryResidModel(nn.Module):
         for dual_block in self.dual_blocks:
             primary, secondary = dual_block(primary, secondary)
         
-        secondary = self.ln_out(secondary)
-        logits = self.lm_head(secondary)
+        x = self.ln_out(secondary) # Use secondary to take advantage of final MLP
+        logits = self.lm_head(x)
         
         if targets is None:
             return logits, None

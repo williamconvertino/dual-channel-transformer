@@ -1,5 +1,6 @@
 {
-    "model_type": "transformer",
+    "model_type": "reduced_embedding",
+    "p_reduced": 0.3,
     "d_latent": 512,
     "max_seq_len": 128,
     "n_heads": 8,

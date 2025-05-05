@@ -6,11 +6,9 @@ from util.evaluator import Evaluator
 from dataset.tokenizer import Tokenizer
 from dataset.tinystories_dataset import TinyStoriesDataset
 from models.transformer_model import TransformerModel
-from models.dual_channel_model import DualChannelModel
-from models.dual_resid_model import DualResidModel
-from models.alt_dual_resid_model import AltDualResidModel
-from models.secondary_resid_model import SecondaryResidModel
-from models.alt_secondary_resid_model import AltSecondaryResidModel
+from models.dual_model import DualModel
+from models.reduced_embedding_model import ReducedEmbeddingModel
+from models.reduced_scratch_space_model import ReducedScratchSpaceModel
 from util.loading import load_checkpoint, load_config
 
 def main():
@@ -32,18 +30,14 @@ def main():
     tokenizer = Tokenizer()
     config.vocab_size = tokenizer.vocab_size
     
-    if config.model_type == "dual":
-        model = DualChannelModel(config)
-    elif config.model_type == "dual_resid":
-        model = DualResidModel(config)
-    elif config.model_type == "transformer":
+    if config.model_type == "transformer":
         model = TransformerModel(config)
-    elif config.model_type == "alt_dual_resid":
-        model = AltDualResidModel(config)
-    elif config.model_type == "secondary_resid":
-        model = SecondaryResidModel(config)
-    elif config.model_type == "alt_secondary_resid":
-        model = AltSecondaryResidModel(config)
+    elif config.model_type == "reduced_embedding":
+        model = ReducedEmbeddingModel(config)
+    elif config.model_type == "reduced_scratch_space":
+        model = ReducedScratchSpaceModel(config)
+    elif config.model_type == "dual":
+        model = DualModel(config)
     else:
         raise ValueError(f"Unknown model type: {config.model_type}")
     
