@@ -64,13 +64,13 @@ class Trainer:
         
         torch.save(checkpoint, os.path.join(self.checkpoint_dir, f"epoch_{epoch}.pt"))
         
-        if val_loss < best_val_loss:
+        if val_loss <= best_val_loss:
             best_checkpoint = {
                 "model_state_dict": self.model.state_dict(),
                 "val_loss": val_loss,
                 "best_val_loss": val_loss
             }
-            torch.save(self.model.state_dict(), os.path.join(self.checkpoint_dir, "best.pt"))
+            torch.save(best_checkpoint, os.path.join(self.checkpoint_dir, "best.pt"))
 
     def _log(self, epoch, train_loss, val_loss):
         with open(self.log_file, "a") as f:
