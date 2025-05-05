@@ -28,7 +28,6 @@ class ReducedScratchSpaceModel(nn.Module):
         B, S = x.shape
         
         x = self.embedding(x)
-        x = torch.cat([x, torch.zeros(B, S, self.config.d_latent - self.config.d_reduced, device=x.device)], dim=-1) # Pad for easier compatibility
         
         for transformer_block in self.transformer_blocks:
             x = transformer_block(x)
