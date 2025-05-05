@@ -57,6 +57,7 @@ def main():
     elif args.eval:
         checkpoint_type = args.checkpoint if args.checkpoint else "best"
         checkpoint = load_checkpoint(model, checkpoint_type)
+        assert checkpoint is not None, f"Checkpoint not found: {checkpoint_type}"
         evaluator = Evaluator(model, splits, tokenizer)
         evaluator.evaluate()
 

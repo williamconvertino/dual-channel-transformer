@@ -6,8 +6,6 @@ from .device import get_device
 
 def generate_text_greedy(model, tokenizer, prompt, max_length=50, temperature=1.0):
     
-    device = get_device()
-    model.to(device)
     model.eval()
     
     input_ids = torch.tensor(tokenizer.encode(prompt)).unsqueeze(0).to(device)
@@ -34,8 +32,6 @@ def generate_text_greedy(model, tokenizer, prompt, max_length=50, temperature=1.
 
 def generate_text_beam(model, tokenizer, prompt, max_length=50, beam_width=3):
     
-    device = get_device()
-    model.to(device)
     model.eval()
     
     input_ids = torch.tensor(tokenizer.encode(prompt)).unsqueeze(0).to(device)
@@ -74,9 +70,6 @@ def generate_text_beam(model, tokenizer, prompt, max_length=50, beam_width=3):
 
 def generate_text_topk(model, tokenizer, prompt, max_length=50, temperature=1.0, top_k=40):
     
-    device = get_device()
-
-    model.to(device)
     model.eval()
     
     input_ids = torch.tensor(tokenizer.encode(prompt)).unsqueeze(0).to(device)
@@ -107,8 +100,6 @@ def generate_text_topk(model, tokenizer, prompt, max_length=50, temperature=1.0,
 
 def generate_text_nucleus(model, tokenizer, prompt, max_length=50, temperature=1.0, top_p=0.9):
 
-    device = get_device()
-    model.to(device)
     model.eval()
     
     input_ids = torch.tensor(tokenizer.encode(prompt)).unsqueeze(0).to(device)
