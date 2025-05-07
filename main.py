@@ -52,7 +52,8 @@ def main():
         checkpoint_type = args.checkpoint if args.checkpoint else "best"
         checkpoint = load_checkpoint(model, checkpoint_type)
         assert checkpoint is not None, f"Checkpoint not found: {checkpoint_type}"
-        print(f"Loaded checkpoint: {checkpoint_type} [{checkpoint['epoch']} epochs]")
+        epoch = checkpoint["epoch"] if "epoch" in checkpoint else "N/A"
+        print(f"Loaded checkpoint: {checkpoint_type} [{epoch} epochs]")
         evaluator = Evaluator(model, splits, tokenizer, checkpoint=checkpoint)
         evaluator.evaluate()
 

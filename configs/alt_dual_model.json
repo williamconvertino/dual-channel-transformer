@@ -1,8 +1,0 @@
-{
-    "model_type": "dual",
-    "d_latent": 512,
-    "max_seq_len": 128,
-    "n_heads": 8,
-    "n_layers": 3,
-    "mlp_residual": "secondary"
-}

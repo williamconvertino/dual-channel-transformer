@@ -66,6 +66,7 @@ class Trainer:
         
         if val_loss <= best_val_loss:
             best_checkpoint = {
+                "epoch": epoch,
                 "model_state_dict": self.model.state_dict(),
                 "val_loss": val_loss,
                 "best_val_loss": val_loss

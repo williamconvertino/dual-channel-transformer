@@ -15,7 +15,6 @@ for n in range(1, 10):
     with open(f"r_embed_{n * 10}.json", "w") as f:
         json.dump(re_config, f, indent=4)
         
-    
     rss_config = {
         "model_type": "reduced_scratch_space",
         "p_reduced": p,
