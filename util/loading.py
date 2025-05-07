@@ -17,6 +17,10 @@ def load_checkpoint(model, checkpoint_type=None):
             return None
         checkpoint_files.sort(key=lambda x: int(x.split('_')[1].split('.')[0]), reverse=True)
         checkpoint_path = os.path.join(checkpoint_dir, checkpoint_files[0])
+    elif "epoch_" in checkpoint_type:
+        checkpoint_path = f"checkpoints/{model.config.name}/{checkpoint_type}.pt"
+        if not os.path.exists(checkpoint_path):
+            raise ValueError(f"Epoch not found: {checkpoint_path}")
     else:
         raise ValueError(f"Unknown checkpoint type: {checkpoint_type}")
     
