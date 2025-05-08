@@ -3,6 +3,7 @@ import util.cache # Initializes cache in the data directory, to avoid home direc
 from argparse import ArgumentParser
 from util.trainer import Trainer
 from util.evaluator import Evaluator
+from util.llm_eval import LLMEvaluator
 from dataset.tokenizer import Tokenizer
 from dataset.tinystories_dataset import TinyStoriesDataset
 from models.transformer_model import TransformerModel
@@ -15,11 +16,12 @@ def main():
     parser = ArgumentParser()
     parser.add_argument("--train", type=str)
     parser.add_argument("--eval", type=str)
+    parser.add_argument("--llm_eval", type=str)
     parser.add_argument("--checkpoint", type=str)
     parser.add_argument("--generate", type=bool, default=False)
     args = parser.parse_args()
 
-    assert args.train or args.eval, "Must specify either train or eval"
+    assert args.train or args.eval or args.llm_eval, "Must specify train, eval, or llm_eval"
     
     if args.train:
         model_name = args.train
@@ -49,14 +51,20 @@ def main():
         checkpoint = load_checkpoint(model, checkpoint_type)
         trainer = Trainer(model, splits, tokenizer, checkpoint=checkpoint)
         trainer.train()
-    elif args.eval:
+    else:
         checkpoint_type = args.checkpoint if args.checkpoint else "epoch_5" # For the paper, we used 5 epochs each 
         checkpoint = load_checkpoint(model, checkpoint_type)
         assert checkpoint is not None, f"Checkpoint not found: {checkpoint_type}"
         epoch = checkpoint["epoch"] if "epoch" in checkpoint else "N/A"
         print(f"Loaded checkpoint: {checkpoint_type} [{epoch} epochs]")
-        evaluator = Evaluator(model, splits, tokenizer, checkpoint=checkpoint)
-        evaluator.evaluate(do_generations=args.generate)
+        
+        if args.eval:
+            evaluator = Evaluator(model, splits, tokenizer, checkpoint=checkpoint)
+            evaluator.evaluate(do_generations=args.generate)
+        elif args.llm_eval:
+            llm_evaluator = LLMEvaluator(model, tokenizer, splits)
+            llm_evaluator.run_llm_eval()
+        
 
 if __name__ == "__main__":
     main()
