@@ -27,6 +27,8 @@ def main():
         model_name = args.train
     elif args.eval:
         model_name = args.eval
+    elif args.llm_eval:
+        model_name = args.llm_eval
     
     config = load_config(model_name)
     
