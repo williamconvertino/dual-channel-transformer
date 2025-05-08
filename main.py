@@ -64,7 +64,7 @@ def main():
             evaluator = Evaluator(model, splits, tokenizer, checkpoint=checkpoint)
             evaluator.evaluate(do_generations=args.generate)
         elif args.llm_eval:
-            llm_evaluator = LLMEvaluator(model, tokenizer, splits)
+            llm_evaluator = LLMEvaluator(model, tokenizer, splits, checkpoint=checkpoint)
             llm_evaluator.run_llm_eval()
         
 

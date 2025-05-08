@@ -72,8 +72,9 @@ Provide your assessment below:
 """
 
 class LLMEvaluator:
-    def __init__(self, model, tokenizer, splits):
+    def __init__(self, model, tokenizer, splits, checkpoint=None):
         self.model = model
+        self.checkpoint = checkpoint
         self.tokenizer = tokenizer
         self.test_loader = splits["test"]
         self.device = get_device()
@@ -265,6 +266,13 @@ class LLMEvaluator:
         }
             
     def run_llm_eval(self):
+        
+        self.model.eval()
+        
+        if self.checkpoint:
+            self.model.load_state_dict(self.checkpoint["model_state_dict"])
+        
+        self.model.to(self.device)
         
         self.create_batch()
         
