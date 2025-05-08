@@ -14,8 +14,9 @@ from util.loading import load_checkpoint, load_config
 def main():
     parser = ArgumentParser()
     parser.add_argument("--train", type=str)
-    parser.add_argument("--eval", type=str, nargs="+")
+    parser.add_argument("--eval", type=str)
     parser.add_argument("--checkpoint", type=str)
+    parser.add_argument("--generate", type=bool, default=False)
     args = parser.parse_args()
 
     assert args.train or args.eval, "Must specify either train or eval"
@@ -23,7 +24,7 @@ def main():
     if args.train:
         model_name = args.train
     elif args.eval:
-        model_name = args.eval[0]
+        model_name = args.eval
     
     config = load_config(model_name)
     
@@ -49,13 +50,13 @@ def main():
         trainer = Trainer(model, splits, tokenizer, checkpoint=checkpoint)
         trainer.train()
     elif args.eval:
-        checkpoint_type = args.checkpoint if args.checkpoint else "best"
+        checkpoint_type = args.checkpoint if args.checkpoint else "epoch_5" # For the paper, we used 5 epochs each 
         checkpoint = load_checkpoint(model, checkpoint_type)
         assert checkpoint is not None, f"Checkpoint not found: {checkpoint_type}"
         epoch = checkpoint["epoch"] if "epoch" in checkpoint else "N/A"
         print(f"Loaded checkpoint: {checkpoint_type} [{epoch} epochs]")
         evaluator = Evaluator(model, splits, tokenizer, checkpoint=checkpoint)
-        evaluator.evaluate()
+        evaluator.evaluate(do_generations=args.generate)
 
 if __name__ == "__main__":
     main()
