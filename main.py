@@ -25,9 +25,10 @@ def main():
     
     if args.llm_eval == "baseline":
         config = load_config("transformer")
+        tokenizer = Tokenizer()
+        config.vocab_size = tokenizer.vocab_size
         config.name = "baseline"
         model = TransformerModel(config) # Dummy model for compatibility
-        tokenizer = Tokenizer()
         splits = TinyStoriesDataset.get_splits(tokenizer, config.max_seq_len)
         llm_evaluator = LLMEvaluator(model, tokenizer, splits)
         llm_evaluator.run_baseline_eval()
