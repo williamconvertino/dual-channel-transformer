@@ -1,6 +1,6 @@
 {
-    "model_type": "reduced_scratch_space",
-    "p_reduced": 0.95,
+    "model_type": "transformer",
+    "p_reduced": 0.7,
     "d_latent": 512,
     "max_seq_len": 128,
     "n_heads": 8,

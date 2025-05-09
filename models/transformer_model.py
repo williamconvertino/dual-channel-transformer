@@ -8,6 +8,9 @@ class TransformerModel(nn.Module):
         
         self.config = config
         
+        if hasattr(config, "p_reduced"):
+            self.config.d_latent = config.d_latent - int(config.d_latent * config.p_reduced) 
+        
         self.embedding = nn.Embedding(config.vocab_size, config.d_latent)
         
         self.transformer_blocks = nn.ModuleList([
