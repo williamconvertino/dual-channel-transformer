@@ -103,10 +103,10 @@ class Evaluator:
         for prompt in prompts:
             print("=" * 50)
             print("Prompt:")
-            print(self.tokenizer.decode(prompt))
+            print(self.tokenizer.decode(prompt, skip_special_tokens=True))
             print("-" * 50)
             
             generated_text = generate_text_nucleus(self.model, self.tokenizer, prompt, self.device)
             print("Generated Text:")
-            print(self.tokenizer.decode(generated_text))
+            print(self.tokenizer.decode(generated_text, skip_special_tokens=True))
             print("=" * 50)
