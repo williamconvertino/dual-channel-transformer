@@ -55,10 +55,12 @@ class Tokenizer:
         else:
             raise ValueError(f"Invalid input type: {type(text)}, expected str or list")
 
-    def decode(self, sequence):
+    def decode(self, sequence, skip_special_tokens=False):
         if len(sequence) == 0:
             return ''
         if isinstance(sequence[0], list):
+            if skip_special_tokens:
+                sequence = [[s for s in s_list if s not in self.special_tokens.values()] for s_list in sequence]
             return [self.tokenizer.decode(s) for s in sequence]
         elif isinstance(sequence[0], int):
             return self.tokenizer.decode(sequence)
