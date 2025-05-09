@@ -106,7 +106,7 @@ class Evaluator:
             print(self.tokenizer.decode(prompt, skip_special_tokens=True))
             print("-" * 50)
             
-            generated_text = generate_text_nucleus(self.model, self.tokenizer, prompt, self.device)
+            generated_text = generate_text_nucleus(self.model, self.tokenizer, prompt, device=self.device)
             print("Generated Text:")
             print(self.tokenizer.decode(generated_text, skip_special_tokens=True))
             print("=" * 50)
