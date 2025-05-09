@@ -24,11 +24,12 @@ def main():
     assert args.train or args.eval or args.llm_eval, "Must specify train, eval, or llm_eval"
     
     if args.llm_eval == "baseline":
-        config = load_config("transformer") # Dummy config for baseline
-        config.name = "baseline"        
+        config = load_config("transformer")
+        config.name = "baseline"
+        model = TransformerModel(config) # Dummy model for compatibility
         tokenizer = Tokenizer()
         splits = TinyStoriesDataset.get_splits(tokenizer, config.max_seq_len)
-        llm_evaluator = LLMEvaluator({"config": config}, tokenizer, splits)
+        llm_evaluator = LLMEvaluator(model, tokenizer, splits)
         llm_evaluator.run_baseline_eval()
         return
     
