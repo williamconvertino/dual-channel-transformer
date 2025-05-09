@@ -123,6 +123,8 @@ class LLMEvaluator:
             print(f"Input: {decoded_input}")
             print(f"Generation: {decoded_generation}")
             
+            return(False)
+            
             prompt = USER_PROMPT.replace('[STORY_BEGIN]', decoded_input).replace('[STORY_END]', decoded_generation)
             
             id = f"{self.model.config.name}_{num_generations}"
