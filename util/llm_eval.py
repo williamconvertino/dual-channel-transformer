@@ -113,10 +113,16 @@ class LLMEvaluator:
             
             if self.model.config.name == "baseline": # Baseline uses default ending
                 generation = sequence[input_size:]
+                if self.tokenizer.eos_token_id in generation:
+                    generation = generation[:generation.index(self.tokenizer.eos_token_id)] # Remove anything after EOS token
             else:
                 generation = generate_text_nucleus(self.model, self.tokenizer, input, device=self.device)
             
             assert not self.tokenizer.eos_token_id in generation, "EOS token found in generation."
+            
+            if len(generation) < 10: # Skip short generations (evaluation wont be meaningful)
+                num_skipped += 1
+                continue
             
             decoded_input = self.tokenizer.decode(input, skip_special_tokens=True)
             decoded_generation = self.tokenizer.decode(generation, skip_special_tokens=True)
