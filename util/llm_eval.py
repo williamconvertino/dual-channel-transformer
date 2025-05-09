@@ -113,13 +113,22 @@ class LLMEvaluator:
             
             input = sequence[:input_size]
             
-            generation = generate_text_nucleus(self.model, self.tokenizer, input, device=self.device)
+            if self.model.config.name == "baseline": # Baseline uses default ending
+                generation = sequence[input_size:]
+            else:
+                generation = generate_text_nucleus(self.model, self.tokenizer, input, device=self.device)
             
             assert not self.tokenizer.eos_token_id in generation, "EOS token found in generation."
             
             decoded_input = self.tokenizer.decode(input, skip_special_tokens=True)
             decoded_generation = self.tokenizer.decode(generation, skip_special_tokens=True)
+        
+            print(self.model.config.name)
+            print(f"Input: {decoded_input}")
+            print(f"Generation: {decoded_generation}")    
             
+            return
+        
             prompt = USER_PROMPT.replace('[STORY_BEGIN]', decoded_input).replace('[STORY_END]', decoded_generation)
             
             id = f"{self.model.config.name}_{num_generations}"
@@ -274,6 +283,15 @@ class LLMEvaluator:
         
         self.model.to(self.device)
         
+        self.create_batch()
+        
+        if not self.save_batch_output():
+            return
+        
+        scores = self.parse_batch_output()
+        print(f"Scores: {scores}")
+        
+    def run_baseline_eval(self):
         self.create_batch()
         
         if not self.save_batch_output():
