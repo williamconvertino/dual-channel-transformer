@@ -78,7 +78,6 @@ class LLMEvaluator:
         self.tokenizer = tokenizer
         self.test_loader = splits["test"]
         self.device = get_device()
-        self.model.to(self.device)
         self.model.eval()
         
         load_dotenv()
