@@ -63,6 +63,8 @@ class Tokenizer:
                 sequence = [[s for s in s_list if s not in [self.eos_token_id, self.bos_token_id, self.pad_token_id]] for s_list in sequence]
             return [self.tokenizer.decode(s) for s in sequence]
         elif isinstance(sequence[0], int):
+            if skip_special_tokens:
+                sequence = [s for s in sequence if s not in [self.eos_token_id, self.bos_token_id, self.pad_token_id]]
             return self.tokenizer.decode(sequence)
         else:
             raise ValueError(f"Invalid input type: {type(sequence)}, expected list of lists or list of ints")
