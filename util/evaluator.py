@@ -69,7 +69,7 @@ class Evaluator:
                 
         return test_loss / len(self.splits["test"])
 
-    def evaluate(self, num_prompts=10, do_generations=False):
+    def evaluate(self, num_prompts=50, do_generations=False):
         
         if self.checkpoint:
             self.model.load_state_dict(self.checkpoint["model_state_dict"])
