@@ -282,7 +282,7 @@ class LLMEvaluator:
         results["total"] = round(total_mean, 2)
 
         latex_string = (
-            f"{round(total_mean, 2)} ({round(total_std, 2)}) & "
+            f"{round(total_mean, 2)} & "
             f"{category_stats['grammar']['mean']} ({category_stats['grammar']['stdev']}) & "
             f"{category_stats['consistency']['mean']} ({category_stats['consistency']['stdev']}) & "
             f"{category_stats['plot']['mean']} ({category_stats['plot']['stdev']}) & "
