@@ -276,13 +276,22 @@ class LLMEvaluator:
                 "stdev": round(std, 2)
             }
 
-        all_scores = score_map["grammar"] + score_map["consistency"] + score_map["plot"] + score_map["creativity"]
-        total_mean = sum(all_scores) / len(all_scores)
-        total_std = statistics.stdev(all_scores) if len(all_scores) > 1 else 0.0
+        total_scores = [
+            sum(scores) / 4
+            for scores in zip(
+                score_map["grammar"],
+                score_map["consistency"],
+                score_map["plot"],
+                score_map["creativity"]
+            )
+        ]
+
+        total_mean = sum(total_scores) / len(total_scores)
+        total_std = statistics.stdev(total_scores) if len(total_scores) > 1 else 0.0
         results["total"] = round(total_mean, 2)
 
         latex_string = (
-            f"{round(total_mean, 2)} & "
+            f"{round(total_mean, 2)} ({round(total_std, 2)}) & "
             f"{category_stats['grammar']['mean']} ({category_stats['grammar']['stdev']}) & "
             f"{category_stats['consistency']['mean']} ({category_stats['consistency']['stdev']}) & "
             f"{category_stats['plot']['mean']} ({category_stats['plot']['stdev']}) & "
