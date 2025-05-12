@@ -1,7 +1,16 @@
 import json
 
-for n in range(1, 10):
-    p = n / 10
+for n in range(1, 12):
+    
+    if n == 10:
+        p = 0.95
+        name = "95"
+    elif n == 11:
+        p = 0.99
+        name = "99"
+    else:
+        p = n / 10
+        name = str(n * 10)
     
     re_config = {
         "model_type": "reduced_embedding",
@@ -12,7 +21,7 @@ for n in range(1, 10):
         "n_layers": 3
     }
     
-    with open(f"r_embed_{n * 10}.json", "w") as f:
+    with open(f"r_embed_{name}.json", "w") as f:
         json.dump(re_config, f, indent=4)
         
     rss_config = {
@@ -24,7 +33,7 @@ for n in range(1, 10):
         "n_layers": 3
     }
     
-    with open(f"r_ss_{n * 10}.json", "w") as f:
+    with open(f"r_ss_{name}.json", "w") as f:
         json.dump(rss_config, f, indent=4)
         
     st_config = {
@@ -37,5 +46,5 @@ for n in range(1, 10):
     }
     
     
-    with open(f"st_{n * 10}.json", "w") as f:
+    with open(f"st_{name}.json", "w") as f:
         json.dump(st_config, f, indent=4)

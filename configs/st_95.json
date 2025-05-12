@@ -1,0 +1,8 @@
+{
+    "model_type": "transformer",
+    "p_reduced": 0.95,
+    "d_latent": 512,
+    "max_seq_len": 128,
+    "n_heads": 8,
+    "n_layers": 3
+}
