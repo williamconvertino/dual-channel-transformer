@@ -3,6 +3,7 @@ from .device import get_device
 from openai import OpenAI
 from dotenv import load_dotenv
 from .evaluator import generate_text_nucleus
+import statistics
 import json
 
 BASE_DIR = os.path.join(os.path.dirname(__file__), "../llm_eval")
@@ -207,11 +208,10 @@ class LLMEvaluator:
             return False
     
     def parse_batch_output(self):
-        
         if os.path.exists(self.results_path):
             with open(self.results_path, "r") as f:
                 return json.load(f)
-            
+        
         with open(self.output_path, "r") as f:
             lines = f.readlines()
         
@@ -263,15 +263,34 @@ class LLMEvaluator:
             score_map["creativity"].append(creativity_score)
         
         print(f"Parsed {len(lines) - num_errors} scores (skipped {num_errors})")
+
+        results = {}
+
+        category_stats = {}
+        for category in score_map:
+            scores = score_map[category]
+            mean = sum(scores) / len(scores)
+            std = statistics.stdev(scores) if len(scores) > 1 else 0.0
+            category_stats[category] = {
+                "mean": round(mean, 2),
+                "stdev": round(std, 2)
+            }
+
+        all_scores = score_map["grammar"] + score_map["consistency"] + score_map["plot"] + score_map["creativity"]
+        total_mean = sum(all_scores) / len(all_scores)
+        total_std = statistics.stdev(all_scores) if len(all_scores) > 1 else 0.0
+        results["total"] = round(total_mean, 2)
+
+        latex_string = (
+            f"{round(total_mean, 2)} ({round(total_std, 2)}) & "
+            f"{category_stats['grammar']['mean']} ({category_stats['grammar']['stdev']}) & "
+            f"{category_stats['consistency']['mean']} ({category_stats['consistency']['stdev']}) & "
+            f"{category_stats['plot']['mean']} ({category_stats['plot']['stdev']}) & "
+            f"{category_stats['creativity']['mean']} ({category_stats['creativity']['stdev']})"
+        )
         
-        return {
-            "grammar": sum(score_map["grammar"]) / len(score_map["grammar"]),
-            "consistency": sum(score_map["consistency"]) / len(score_map["consistency"]),
-            "plot": sum(score_map["plot"]) / len(score_map["plot"]),
-            "creativity": sum(score_map["creativity"]) / len(score_map["creativity"]),
-            "total": sum(score_map["grammar"] + score_map["consistency"] + score_map["plot"] + score_map["creativity"]) / (4 * len(score_map["grammar"]))
-        }
-            
+        print(latex_string)
+
     def run_llm_eval(self):
         
         self.model.eval()
@@ -286,8 +305,7 @@ class LLMEvaluator:
         if not self.save_batch_output():
             return
         
-        scores = self.parse_batch_output()
-        print(f"Scores: {scores}")
+        self.parse_batch_output()
         
     def run_baseline_eval(self):
         self.create_batch()
@@ -295,5 +313,5 @@ class LLMEvaluator:
         if not self.save_batch_output():
             return
         
-        scores = self.parse_batch_output()
-        print(f"Scores: {scores}")
+        self.parse_batch_output()
+        
