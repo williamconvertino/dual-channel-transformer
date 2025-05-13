@@ -74,19 +74,22 @@ class Evaluator:
         if self.checkpoint:
             self.model.load_state_dict(self.checkpoint["model_state_dict"])
         
-        self.model.to(self.device)
-        self.model.eval()
+        
+        if not self.model.config.name == "baseline":
+            self.model.to(self.device)
+            self.model.eval()
 
-        test_loss = self._get_test_loss()
-        
-        print(f"=" * 50)
-        print(f"Test Loss: {test_loss:.4f}")
-        print(f"=" * 50)
-        
+            test_loss = self._get_test_loss()
+            
+            print(f"=" * 50)
+            print(f"Test Loss: {test_loss:.4f}")
+            print(f"=" * 50)
+            
         if not do_generations:
             return
         
         prompts = []
+        true_endings = []
         
         for i, batch in enumerate(self.splits["test"]):
             if i >= num_prompts:
@@ -96,17 +99,24 @@ class Evaluator:
             example = [token for token in example if token != self.tokenizer.pad_token_id]
             max_tokens = min(self.model.config.max_seq_len // 2, len(example) // 2)
 
-            example = example[:max_tokens]            
+            prompt = example[:max_tokens]      
+            true_ending = example[max_tokens:]      
             
-            prompts.append(example)
+            prompts.append(prompt)
+            true_endings.append(true_ending)
             
-        for prompt in prompts:
+        for prompt, true_ending in zip(prompts, true_endings):
             print("=" * 50)
             print("Prompt:")
             print(self.tokenizer.decode(prompt, skip_special_tokens=True))
             print("-" * 50)
             
-            generated_text = generate_text_nucleus(self.model, self.tokenizer, prompt, device=self.device)
-            print("Generated Text:")
-            print(self.tokenizer.decode(generated_text, skip_special_tokens=True))
-            print("=" * 50)
+            if self.model.config.name == "baseline": 
+                print("Baseline Text:")
+                print(true_ending)
+                print("=" * 50) 
+            else:
+                generated_text = generate_text_nucleus(self.model, self.tokenizer, prompt, device=self.device)
+                print("Generated Text:")
+                print(self.tokenizer.decode(generated_text, skip_special_tokens=True))
+                print("=" * 50)
