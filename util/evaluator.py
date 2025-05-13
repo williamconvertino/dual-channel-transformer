@@ -113,7 +113,7 @@ class Evaluator:
             
             if self.model.config.name == "baseline": 
                 print("Baseline Text:")
-                print(true_ending)
+                print(self.tokenizer.decode(true_ending, skip_special_tokens=True))
                 print("=" * 50) 
             else:
                 generated_text = generate_text_nucleus(self.model, self.tokenizer, prompt, device=self.device)
