@@ -41,7 +41,7 @@ def main():
         config.name = "baseline"
         model = TransformerModel(config) # Dummy model for compatibility
         splits = TinyStoriesDataset.get_splits(tokenizer, config.max_seq_len)
-        evaluator = Evaluator(model, splits, tokenizer, checkpoint=checkpoint)
+        evaluator = Evaluator(model, splits, tokenizer, checkpoint=None)
         evaluator.evaluate(do_generations=True)
         return
     
